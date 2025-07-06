@@ -22,7 +22,6 @@ app.post('/echo', (req, res) => {
 
 //routes
 
-
 // Start server
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
