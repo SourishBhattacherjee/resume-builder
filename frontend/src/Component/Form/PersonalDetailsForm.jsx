@@ -46,6 +46,7 @@ const PersonalDetailsForm = ({ formData, setFormData, errors, setErrors, nextSte
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <h1>Personal Details</h1>
       <div>
         <label className="block text-gray-700">Full Name *</label>
         <input
