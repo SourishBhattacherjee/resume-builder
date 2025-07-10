@@ -52,8 +52,36 @@ const loginUser = async (req,res) => {
   }
 }
 
-const getUser = async (req,res) =>{
-  
+const getUser = async (req, res) => {
+  try {
+    // Get token from header
+    const token = req.headers.authorization?.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, process.env.SECRET_KEY);
+    
+    // You can optionally fetch fresh user data from DB if needed
+    // const user = await User.findById(decoded.userId).select('-password');
+    
+    // Return decoded data (or user data from DB)
+    res.status(200).json({
+      message: 'User data retrieved successfully',
+      user: decoded // or user if you fetched from DB
+    });
+    
+  } catch (err) {
+    if (err.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token expired' });
+    }
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 }
 
 module.exports = {registerUser,loginUser,getUser}
