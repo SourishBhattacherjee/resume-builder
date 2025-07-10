@@ -52,7 +52,7 @@ const PersonalDetailsForm = ({ formData, setFormData, errors, setErrors, nextSte
         <input
           type="text"
           name="fullName"
-          value={formData.fullName}
+          value={formData.fullName || ''}
           onChange={handleChange}
           className="w-full p-3 border rounded-lg"
           required
@@ -65,7 +65,7 @@ const PersonalDetailsForm = ({ formData, setFormData, errors, setErrors, nextSte
         <input
           type="email"
           name="email"
-          value={formData.email}
+          value={formData.email || ''}
           onChange={handleChange}
           className="w-full p-3 border rounded-lg"
           required
@@ -79,7 +79,7 @@ const PersonalDetailsForm = ({ formData, setFormData, errors, setErrors, nextSte
           type="url"
           name="linkedin"
           placeholder="https://linkedin.com/in/..."
-          value={formData.linkedin}
+          value={formData.linkedin || ''}
           onChange={handleChange}
           className="w-full p-3 border rounded-lg"
         />
@@ -92,7 +92,7 @@ const PersonalDetailsForm = ({ formData, setFormData, errors, setErrors, nextSte
           type="url"
           name="github"
           placeholder="https://github.com/..."
-          value={formData.github}
+          value={formData.github || ''}
           onChange={handleChange}
           className="w-full p-3 border rounded-lg"
         />

@@ -6,14 +6,16 @@ const fs = require('fs');
 const path = require('path');
 const app = express();
 const cors = require('cors')
+const userRoute = require('./routes/userRoute')
 
 
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('public'));
+app.use(express.json());
 
 // Endpoint to process LaTeX
-app.post('/generate-resume', async (req, res) => {
+/*app.post('/generate-resume', async (req, res) => {
   const tempDir = './Templates';
   const { fullName } = req.body;
 
@@ -44,6 +46,8 @@ app.post('/generate-resume', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-});
+});*/
 
+
+app.use('/',userRoute)
 app.listen(7000, () => console.log('Server running on port 7000'));
