@@ -7,8 +7,9 @@ const path = require('path');
 const app = express();
 const cors = require('cors')
 const userRoute = require('./routes/userRoute')
+const connectDB = require('./utils/db');
 
-
+connectDB()
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('public'));
