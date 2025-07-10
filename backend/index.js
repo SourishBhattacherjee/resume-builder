@@ -9,7 +9,7 @@ const cors = require('cors')
 const userRoute = require('./routes/userRoute')
 const connectDB = require('./utils/db');
 
-connectDB()
+connectDB();
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('public'));
@@ -49,6 +49,13 @@ app.use(express.json());
   }
 });*/
 
+//testing
+app.get('/', (req, res) => {
+  res.send('Server is running');
+});
+app.post('/', async(req,res)=>{
+  res.send('server running');
+})
 
 app.use('/',userRoute)
-app.listen(7000, () => console.log('Server running on port 7000'));
+app.listen(process.env.PORT, () => console.log(`Server connected to http://localhost:${process.env.PORT}`));
