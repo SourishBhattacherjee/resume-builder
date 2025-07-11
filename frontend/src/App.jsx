@@ -8,10 +8,12 @@ import Home from './Pages/Home'
 import Login from './Pages/Login'
 import Register from './Pages/Register'
 import Dashboard from './Pages/Dashboard'
+import {ToastContainer} from 'react-toastify'
 function App() {
 
   return (
     <>
+    <ToastContainer />
     <Routes>
       <Route path='/' element = {<Home/>}></Route>
       <Route path='/register' element = {<Register/>}></Route>
