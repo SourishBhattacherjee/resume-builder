@@ -35,8 +35,6 @@ const loginUser = async (req,res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
-
-    // Create JWT token
     const token = jwt.sign(
       { userId: user._id, email: user.email,fullName: user.fullName }, //payload
       process.env.SECRET_KEY
@@ -54,19 +52,15 @@ const loginUser = async (req,res) => {
 
 const getUser = async (req, res) => {
   try {
-    // Get token from header
     const token = req.headers.authorization?.split(' ')[1];
     
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
 
-    // Verify token
     const decoded = jwt.verify(token, process.env.SECRET_KEY);
-    
     // You can optionally fetch fresh user data from DB if needed
     // const user = await User.findById(decoded.userId).select('-password');
-    
     // Return decoded data (or user data from DB)
     res.status(200).json({
       message: 'User data retrieved successfully',
