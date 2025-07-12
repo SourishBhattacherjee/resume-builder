@@ -19,7 +19,7 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:7000/login', formData);
+      const response = await axios.post('/login', formData);
       toast.success(response.data.message);
       setTimeout(() => navigate('/dashboard'), 5000); 
     } catch (err) {

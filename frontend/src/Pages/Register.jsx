@@ -20,7 +20,7 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:7000/register', formData);
+      const response = await axios.post('/register', formData);
       toast.success(response.data.message);
       setTimeout(() => navigate('/login'), 2000); // Navigate after toast shows
     } catch (err) {
