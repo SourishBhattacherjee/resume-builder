@@ -45,6 +45,7 @@ const Register = () => {
       <h2>Register</h2>
       {error && <p className="error">{error}</p>}
       <form onSubmit={handleSubmit}>
+        <label>Full Name : </label>
         <input
           type="text"
           name="fullName"
@@ -53,6 +54,7 @@ const Register = () => {
           onChange={handleChange}
           required
         />
+        <label>Email : </label>
         <input
           type="email"
           name="email"
@@ -61,6 +63,7 @@ const Register = () => {
           onChange={handleChange}
           required
         />
+        <label>Password : </label>
         <input
           type="password"
           name="password"

@@ -28,6 +28,7 @@ const Login = () => {
     }
   };
   return (
+
     <div className="auth-container">
       <ToastContainer
         position="top-right"
@@ -40,9 +41,11 @@ const Login = () => {
         draggable
         pauseOnHover
       />
+
       <h2>Register</h2>
       {error && <p className="error">{error}</p>}
       <form onSubmit={handleSubmit}>
+      <label>Email : </label>
         <input
           type="email"
           name="email"
@@ -51,6 +54,7 @@ const Login = () => {
           onChange={handleChange}
           required
         />
+        <label>Password : </label>
         <input
           type="password"
           name="password"
