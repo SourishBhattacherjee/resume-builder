@@ -78,4 +78,14 @@ const getUser = async (req, res) => {
   }
 }
 
-module.exports = {registerUser,loginUser,getUser}
+
+const getOTP = async(req,res) => {
+
+}
+const verifyOTP = async(req,res) => {
+  
+}
+const resetPassword = async(req,res) => {
+  
+}
+module.exports = {registerUser,loginUser,getUser,getOTP,verifyOTP,resetPassword}
