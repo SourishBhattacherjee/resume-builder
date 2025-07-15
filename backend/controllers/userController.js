@@ -83,22 +83,34 @@ function generateRandomSixDigitNumber() {
   return Math.floor(100000 + Math.random() * 900000);
 }
 
-const getOTP = async(req,res) => {
-  const {email} = req.body;
+const getOTP = async(req, res) => {
+  const { email } = req.body;
   const OTP = generateRandomSixDigitNumber();
-  res.status(200).json({
-    email : email,
-    otp  : OTP
-  });
-  //if Otp for a specific user exist, just updatye the otp;
-  const newOtp = new Otp({
-      email : email,
-      otp : OTP,
-      expires: 300
-  })
-  await newOtp.save();
   
+  try {
+    // Calculate expiration time (10 seconds from now)
+    const expires = new Date();
+    expires.setSeconds(expires.getSeconds() + 10);
+    await Otp.findOneAndUpdate(
+      { email: email },
+      { 
+        email: email,
+        Otp: OTP,
+        expires: expires
+      },
+      { upsert: true, new: true }
+    );
 
+    res.status(200).json({
+      message: 'OTP has been sent',
+      expiresAt: expires 
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error processing OTP',
+      error: error.message
+    });
+  }
 }
 const verifyOTP = async(req,res) => {
   

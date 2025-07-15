@@ -13,11 +13,22 @@ const VerifyOTP = ({ email, onVerified, onCancel }) => {
     }
   };
 
+
+  const handleOTP = async () => {
+    try {
+      await axios.post('/send-otp', {email});
+    }
+    catch(e){
+      console.log(e);
+    }
+  }
+
   return (
     <div>
       <h3>Enter OTP sent to {email}</h3>
       <input value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="Enter OTP" />
       <button onClick={handleVerify}>Verify OTP</button>
+      <buttom onClick = {handleOTP}>Re-send OTP</buttom>
       <button onClick={onCancel}>Cancel</button>
     </div>
   );
