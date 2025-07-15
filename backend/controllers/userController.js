@@ -1,6 +1,7 @@
 const User = require('../models/User');
+const Otp = require('../models/Otp')
 const bcrypt = require('bcryptjs')
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
 
 const registerUser = async (req,res) => {
   try {
@@ -78,8 +79,25 @@ const getUser = async (req, res) => {
   }
 }
 
+function generateRandomSixDigitNumber() {
+  return Math.floor(100000 + Math.random() * 900000);
+}
 
 const getOTP = async(req,res) => {
+  const {email} = req.body;
+  const OTP = generateRandomSixDigitNumber();
+  res.status(200).json({
+    email : email,
+    otp  : OTP
+  });
+  //if Otp for a specific user exist, just updatye the otp;
+  const newOtp = new Otp({
+      email : email,
+      otp : OTP,
+      expires: 300
+  })
+  await newOtp.save();
+  
 
 }
 const verifyOTP = async(req,res) => {
