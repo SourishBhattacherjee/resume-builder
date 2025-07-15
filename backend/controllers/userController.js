@@ -58,14 +58,10 @@ const getUser = async (req, res) => {
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
-
     const decoded = jwt.verify(token, process.env.SECRET_KEY);
-    // You can optionally fetch fresh user data from DB if needed
-    // const user = await User.findById(decoded.userId).select('-password');
-    // Return decoded data (or user data from DB)
     res.status(200).json({
       message: 'User data retrieved successfully',
-      user: decoded // or user if you fetched from DB
+      user: decoded
     });
     
   } catch (err) {
@@ -88,9 +84,8 @@ const getOTP = async(req, res) => {
   const OTP = generateRandomSixDigitNumber();
   
   try {
-    // Calculate expiration time (10 seconds from now)
     const expires = new Date();
-    expires.setSeconds(expires.getSeconds() + 120);
+    expires.setSeconds(expires.getSeconds() + 120); // expiry date
     await Otp.findOneAndUpdate(
       { email: email },
       { 
