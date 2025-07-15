@@ -142,7 +142,41 @@ const verifyOTP = async(req, res) => {
     });
   }
 }
-const resetPassword = async(req,res) => {
+const resetPassword = async(req, res) => {
+  const { email, password } = req.body;
   
+  try {
+    // First verify the user exists
+    const userExists = await User.exists({ email });
+    
+    if (!userExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'No user found with this email address'
+      });
+    }
+
+    // Hash the new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update only existing users (no upsert)
+    await User.findOneAndUpdate(
+      { email: email },
+      { password: hashedPassword }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Password updated successfully'
+    });
+
+  } catch (e) {
+    console.error('Password reset error:', e);
+    res.status(500).json({
+      success: false,
+      message: 'Error resetting password',
+      error: e.message
+    });
+  }
 }
 module.exports = {registerUser,loginUser,getUser,getOTP,verifyOTP,resetPassword}
