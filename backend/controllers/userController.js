@@ -90,12 +90,12 @@ const getOTP = async(req, res) => {
   try {
     // Calculate expiration time (10 seconds from now)
     const expires = new Date();
-    expires.setSeconds(expires.getSeconds() + 10);
+    expires.setSeconds(expires.getSeconds() + 120);
     await Otp.findOneAndUpdate(
       { email: email },
       { 
         email: email,
-        Otp: OTP,
+        otp: OTP,
         expires: expires
       },
       { upsert: true, new: true }
@@ -112,8 +112,40 @@ const getOTP = async(req, res) => {
     });
   }
 }
-const verifyOTP = async(req,res) => {
+const verifyOTP = async(req, res) => {
+  const { email, otp } = req.body;
   
+  try {
+    
+    
+    const record = await Otp.findOne({ email, otp });
+    if (!record) {
+      const existsForEmail = await Otp.exists({ email });
+      return res.status(400).json({
+        message: existsForEmail ? 'Invalid OTP' : 'No OTP requested for this email',
+        success: false
+      });
+    }
+    if (record.expires < new Date()) {
+      await Otp.deleteOne({ _id: record._id });
+      return res.status(400).json({ 
+        message: 'OTP has expired',
+        success: false 
+      });
+    }
+    await Otp.deleteOne({ _id: record._id });
+    res.json({ 
+      success: true,
+      message: 'OTP verified successfully' 
+    });
+
+  } catch (e) {
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error during verification',
+      error: e.message 
+    });
+  }
 }
 const resetPassword = async(req,res) => {
   

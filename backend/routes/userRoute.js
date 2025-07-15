@@ -7,7 +7,7 @@ router.post('/register',registerUser);
 router.post('/login',loginUser);
 router.get('/profile',getUser);
 router.post('/send-otp',getOTP);
-router.get('/verify-otp',verifyOTP);
+router.post('/verify-otp',verifyOTP);
 router.post('/reset-password',resetPassword);
 
 
