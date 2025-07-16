@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { toast, ToastContainer } from 'react-toastify';
 
 const VerifyOTP = ({ email, onVerified, onCancel }) => {
   const [otp, setOtp] = useState('');
@@ -17,6 +18,7 @@ const VerifyOTP = ({ email, onVerified, onCancel }) => {
   const handleOTP = async () => {
     try {
       await axios.post('/send-otp', {email});
+      toast.success('OTP has been re-sent to email');
     }
     catch(e){
       console.log(e);
@@ -28,7 +30,7 @@ const VerifyOTP = ({ email, onVerified, onCancel }) => {
       <h3>Enter OTP sent to {email}</h3>
       <input value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="Enter OTP" />
       <button onClick={handleVerify}>Verify OTP</button>
-      <buttom onClick = {handleOTP}>Re-send OTP</buttom>
+      <button onClick = {handleOTP}>Re-send OTP</button>
       <button onClick={onCancel}>Cancel</button>
     </div>
   );
