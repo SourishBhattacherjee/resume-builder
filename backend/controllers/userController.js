@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Otp = require('../models/Otp')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken');
+const {sendOTPEmail}  = require('../helper/mail')
 
 const registerUser = async (req,res) => {
   try {
@@ -94,7 +95,7 @@ const getOTP = async(req, res) => {
     const OTP = generateRandomSixDigitNumber();
     const expires = new Date();
     expires.setSeconds(expires.getSeconds() + 120); // 2 minutes expiry
-
+    await sendOTPEmail(email,OTP);
     await Otp.findOneAndUpdate(
       { email: email },
       { 
