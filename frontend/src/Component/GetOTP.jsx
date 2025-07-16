@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 const GetOTP = ({ onNext, onCancel }) => {
   const [email, setEmail] = useState('');
 
@@ -8,8 +9,9 @@ const GetOTP = ({ onNext, onCancel }) => {
     try {
       await axios.post('/send-otp', { email });
       onNext(email);
+      toast.success('OTP has been send to email')
     } catch (err) {
-      alert('Failed to send OTP');
+      toast.error('Email does not exist in DB');
     }
   };
 

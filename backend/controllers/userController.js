@@ -81,11 +81,20 @@ function generateRandomSixDigitNumber() {
 
 const getOTP = async(req, res) => {
   const { email } = req.body;
-  const OTP = generateRandomSixDigitNumber();
   
   try {
+    // First verify user exists
+    const userExists = await User.exists({ email });
+    if (!userExists) {
+      return res.status(404).json({
+        success: false,
+        message: 'No user found with this email address'
+      });
+    }
+    const OTP = generateRandomSixDigitNumber();
     const expires = new Date();
-    expires.setSeconds(expires.getSeconds() + 120); // expiry date
+    expires.setSeconds(expires.getSeconds() + 120); // 2 minutes expiry
+
     await Otp.findOneAndUpdate(
       { email: email },
       { 
@@ -95,14 +104,16 @@ const getOTP = async(req, res) => {
       },
       { upsert: true, new: true }
     );
-
     res.status(200).json({
-      message: 'OTP has been sent',
+      success: true,
+      message: 'OTP has been sent to registered email',
       expiresAt: expires 
     });
+
   } catch (error) {
     res.status(500).json({
-      message: 'Error processing OTP',
+      success: false,
+      message: 'Error processing OTP request',
       error: error.message
     });
   }
@@ -111,8 +122,6 @@ const verifyOTP = async(req, res) => {
   const { email, otp } = req.body;
   
   try {
-    
-    
     const record = await Otp.findOne({ email, otp });
     if (!record) {
       const existsForEmail = await Otp.exists({ email });
@@ -146,7 +155,6 @@ const resetPassword = async(req, res) => {
   const { email, password } = req.body;
   
   try {
-    // First verify the user exists
     const userExists = await User.exists({ email });
     
     if (!userExists) {
@@ -156,10 +164,7 @@ const resetPassword = async(req, res) => {
       });
     }
 
-    // Hash the new password
     const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Update only existing users (no upsert)
     await User.findOneAndUpdate(
       { email: email },
       { password: hashedPassword }
@@ -171,7 +176,6 @@ const resetPassword = async(req, res) => {
     });
 
   } catch (e) {
-    console.error('Password reset error:', e);
     res.status(500).json({
       success: false,
       message: 'Error resetting password',
