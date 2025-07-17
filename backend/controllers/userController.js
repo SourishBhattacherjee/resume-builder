@@ -184,4 +184,6 @@ const resetPassword = async(req, res) => {
     });
   }
 }
+
+
 module.exports = {registerUser,loginUser,getUser,getOTP,verifyOTP,resetPassword}

@@ -22,6 +22,7 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await axios.post('/login', formData);
+      localStorage.setItem('token',response.data.token)
       toast.success(response.data.message);
       setTimeout(() => navigate('/dashboard'), 2000);
     } catch (err) {
