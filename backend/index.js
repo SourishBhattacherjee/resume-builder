@@ -61,4 +61,5 @@ app.post('/', async(req,res)=>{
 })
 
 app.use('/',userRoute)
+app.use('/',require('./routes/resumeRoute'));
 app.listen(process.env.PORT, () => console.log(`Server connected to http://localhost:${process.env.PORT}`));
