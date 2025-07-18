@@ -1,3 +1,4 @@
+const { generateEducationLatex } = require('../helper/latexGenerators');
 const Resume = require('../models/Resume');
 const createResume = async (req, res) => {
   try {
@@ -36,9 +37,35 @@ const createResume = async (req, res) => {
     });
   }
 };
-const updateResume = (req,res) => {
-  
-}
+const updateResume = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const updatedResume = await Resume.findByIdAndUpdate(id, updateData, { new: true });
+
+    if (!updatedResume) {
+      return res.status(404).json({ error: 'Resume not found' });
+    }
+
+    /*// Generate LaTeX from updated education data
+    const educationLatex = generateEducationLatex(updatedResume.education);
+
+    // Inject into a LaTeX template (assume placeholders in the template like %%EDUCATION%%)
+    const fs = require('fs');
+    const template = fs.readFileSync('templates/resume_template.tex', 'utf8');
+    const filledTemplate = template.replace('%%EDUCATION%%', educationLatex);
+
+    // Optionally save to disk or compile with pdflatex here
+    fs.writeFileSync(`generated/resume_${id}.tex`, filledTemplate);*/  //for latex part
+
+    res.json({ success: true, message: 'Resume updated and LaTeX generated.', resume: updatedResume });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+};
+
 const deleteResume = (req,res) => {
   
 }

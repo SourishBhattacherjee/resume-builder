@@ -9,17 +9,15 @@ const educationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  fieldOfStudy: {
-    type: String,
-    required: true
-  },
   startDate: {
     type: Date,
     required: true
   },
   endDate: Date,
-  gpa: Number,
-  description: String
+  relatedCoursework: {
+    type: String,
+    required: true
+  }
 });
 
 const experienceSchema = new mongoose.Schema({
