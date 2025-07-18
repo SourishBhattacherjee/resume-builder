@@ -21,11 +21,7 @@ const educationSchema = new mongoose.Schema({
 });
 
 const experienceSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true
-  },
-  company: {
+  companyName: {
     type: String,
     required: true
   },
@@ -39,7 +35,6 @@ const experienceSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  description: String,
   responsibilities: [String]
 });
 
@@ -76,6 +71,26 @@ const skillSchema = new mongoose.Schema({
   }
 });
 
+
+const personalSchema = new mongoose.Schema({
+  fullName:{
+    type:String,
+    required:true
+  },
+  email:{
+    type:String,
+    required:true
+  },
+  linkedin:{
+    type:String,
+    required:true
+  },
+  github:{
+    type:String,
+    required:true
+  }
+})
+
 const resumeSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -86,15 +101,7 @@ const resumeSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  title: String,
-  contact: {
-    email: String,
-    phone: String,
-    address: String,
-    website: String,
-    linkedin: String,
-    github: String
-  },
+  personalDetails: [personalSchema],
   summary: String,
   education: [educationSchema],
   skills: [skillSchema],
