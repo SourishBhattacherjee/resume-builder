@@ -43,15 +43,8 @@ const projectSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  description: {
-    type: String,
-    required: true
-  },
-  technologies: [String],
-  startDate: Date,
-  endDate: Date,
-  url: String,
-  githubRepo: String
+  link: String,
+  description: [String]
 });
 
 const skillSchema = new mongoose.Schema({
