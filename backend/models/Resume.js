@@ -47,23 +47,6 @@ const projectSchema = new mongoose.Schema({
   description: [String]
 });
 
-const skillSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
-  },
-  level: {
-    type: String,
-    enum: ['Beginner', 'Intermediate', 'Advanced', 'Expert'],
-    default: 'Intermediate'
-  },
-  category: {
-    type: String,
-    enum: ['Programming Language', 'Framework', 'Tool', 'Language', 'Other'],
-    default: 'Programming Language'
-  }
-});
-
 
 const personalSchema = new mongoose.Schema({
   fullName:{
@@ -97,23 +80,14 @@ const resumeSchema = new mongoose.Schema({
   personalDetails: [personalSchema],
   summary: String,
   education: [educationSchema],
-  skills: [skillSchema],
+  skills: [String],
   experience: [experienceSchema],
   projects: [projectSchema],
   certifications: [{
     name: String,
-    issuer: String,
-    dateObtained: Date,
-    expirationDate: Date,
-    credentialId: String
+    link:String
   }],
-  languages: [{
-    name: String,
-    proficiency: {
-      type: String,
-      enum: ['Basic', 'Intermediate', 'Fluent', 'Native']
-    }
-  }],
+  languages: [String],
   lastUpdated: {
     type: Date,
     default: Date.now
