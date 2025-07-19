@@ -4,23 +4,27 @@ const fs = require('fs');
 
 const generateResumeLatex = (resumeData) => {
   const personal = resumeData.personalDetails[0];
-  
-  // Header section
-  let latex = `\\documentclass[11pt]{article}
-\\usepackage{fullpage}
+
+  let latex = `\\documentclass[10pt]{extarticle}
+\\usepackage[margin=0.7in]{geometry}
 \\usepackage{amsmath,amssymb}
-\\usepackage{url}
-\\usepackage[pdftex]{hyperref}
+\\usepackage{hyperref}
 \\hypersetup{colorlinks=true,urlcolor=blue}
 \\usepackage{enumitem}
-\\setlist[itemize]{leftmargin=*}
+\\setlist[itemize]{leftmargin=*, itemsep=0pt, topsep=2pt}
+\\usepackage{titlesec}
+\\titleformat{\\section}{\\large\\bfseries}{}{0em}{}
+\\renewcommand{\\familydefault}{\\sfdefault}
+\\pagenumbering{gobble}
 
 \\begin{document}
 
+% === NAME SECTION ===
 \\begin{center}
-{\\Large \\textbf{${escapeLatex(personal.fullName)}}} \\\\[5pt]
-\\href{mailto:${escapeLatex(personal.email)}}{${escapeLatex(personal.email)}} $\\vert$ 
-\\href{${escapeLatex(personal.linkedin || '#')}}{LinkedIn} $\\vert$ 
+{\\huge \\bfseries ${escapeLatex(personal.fullName)}}\\\\[4pt]
+\\small
+\\href{mailto:${escapeLatex(personal.email)}}{${escapeLatex(personal.email)}} $\\vert$
+\\href{${escapeLatex(personal.linkedin || '#')}}{LinkedIn} $\\vert$
 \\href{${escapeLatex(personal.github || '#')}}{GitHub}
 \\end{center}
 
@@ -30,8 +34,8 @@ const generateResumeLatex = (resumeData) => {
   if (resumeData.education?.length > 0) {
     latex += `\\section*{Education}\n\\begin{itemize}\n`;
     resumeData.education.forEach(edu => {
-      latex += `  \\item \\textbf{${escapeLatex(edu.institution)}} \\hfill ${formatDate(edu.startDate)} - ${formatDate(edu.endDate)}\\\n`;
-      latex += `  ${escapeLatex(edu.degree)}\\\n`;
+      latex += `  \\item \\textbf{${escapeLatex(edu.institution)}} \\hfill ${formatDate(edu.startDate)} -- ${formatDate(edu.endDate)}\\\\\n`;
+      latex += `  ${escapeLatex(edu.degree)}\\\\\n`;
       if (edu.relatedCoursework) {
         latex += `  \\textit{Related Coursework:} ${escapeLatex(edu.relatedCoursework)}\n`;
       }
@@ -43,14 +47,15 @@ const generateResumeLatex = (resumeData) => {
   if (resumeData.experience?.length > 0) {
     latex += `\\section*{Experience}\n`;
     resumeData.experience.forEach(exp => {
-      latex += `\\textbf{${escapeLatex(exp.companyName)}} \\hfill ${escapeLatex(exp.location)}\\\n`;
       const endDate = exp.currentlyWorking ? 'Present' : formatDate(exp.endDate);
-      latex += `\\textit{${formatDate(exp.startDate)} - ${endDate}}\n\\begin{itemize}\n`;
+      latex += `\\textbf{${escapeLatex(exp.companyName)}} \\hfill ${escapeLatex(exp.location)}\\\\\n`;
+      latex += `\\textit{${formatDate(exp.startDate)} -- ${endDate}}\\\\\n\\begin{itemize}\n`;
       exp.responsibilities.forEach(resp => {
         latex += `  \\item ${escapeLatex(resp)}\n`;
       });
-      latex += `\\end{itemize}\n\n`;
+      latex += `\\end{itemize}\n`;
     });
+    latex += `\n`;
   }
 
   // Projects section

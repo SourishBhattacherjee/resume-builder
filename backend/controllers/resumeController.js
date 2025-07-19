@@ -3,18 +3,19 @@ const Resume = require('../models/Resume');
 const createResume = async (req, res) => {
   try {
     const userId = req.params.id;
-    const { name } = req.body;
+    const { name,template } = req.body;
 
-    if (!name) {
+    if (!name || !template) {
       return res.status(400).json({
         success: false,
-        message: 'Resume name is required'
+        message: 'Resume name and template is required'
       });
     }
 
     const newResume = new Resume({
       user: userId,
       name: name,
+      template: template,
       contact: {},
       education: [],
       skills: [],
