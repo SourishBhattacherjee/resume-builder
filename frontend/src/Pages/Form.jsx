@@ -3,6 +3,7 @@ import ResumePreview from '../Component/ResumePreview';
 import PersonalDetailsForm from '../Component/Form/PersonalDetailsForm';
 import EducationForm from '../Component/Form/EducationForm';
 import ExperienceForm from '../Component/Form/ExperienceForm';
+import ProjectForm from '../Component/Form/ProjectFrom';
 // Future: import EducationForm, ExperienceForm, etc.
 
 const Form = () => {
@@ -42,6 +43,17 @@ const Form = () => {
       case 2:
         return(
           <ExperienceForm
+            formData={formData}
+            setFormData={setFormData}
+            errors={errors}
+            setErrors={setErrors}
+            nextStep={nextStep}
+            prevStep={prevStep}
+          />
+        );
+      case 3:
+        return(
+          <ProjectForm
             formData={formData}
             setFormData={setFormData}
             errors={errors}
