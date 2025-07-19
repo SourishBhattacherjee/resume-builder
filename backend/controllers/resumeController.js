@@ -1,4 +1,4 @@
-const { generateEducationLatex } = require('../helper/latexGenerators');
+const { generateResumeLatex, saveLatexToFile } = require('../helper/latexGenerators');
 const Resume = require('../models/Resume');
 const createResume = async (req, res) => {
   try {
@@ -48,18 +48,18 @@ const updateResume = async (req, res) => {
       return res.status(404).json({ error: 'Resume not found' });
     }
 
-    /*// Generate LaTeX from updated education data
-    const educationLatex = generateEducationLatex(updatedResume.education);
+    // Generate LaTeX content
+    const latexContent = generateResumeLatex(updatedResume);
+    
+    // Save to file
+    const { filename } = saveLatexToFile(latexContent, id);
 
-    // Inject into a LaTeX template (assume placeholders in the template like %%EDUCATION%%)
-    const fs = require('fs');
-    const template = fs.readFileSync('templates/resume_template.tex', 'utf8');
-    const filledTemplate = template.replace('%%EDUCATION%%', educationLatex);
-
-    // Optionally save to disk or compile with pdflatex here
-    fs.writeFileSync(`generated/resume_${id}.tex`, filledTemplate);*/  //for latex part
-
-    res.json({ success: true, message: 'Resume updated and LaTeX generated.', resume: updatedResume });
+    res.json({ 
+      success: true, 
+      message: 'Resume updated and LaTeX generated.', 
+      resume: updatedResume,
+      latexFile: filename
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Something went wrong' });
