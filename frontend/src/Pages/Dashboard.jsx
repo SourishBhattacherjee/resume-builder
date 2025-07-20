@@ -42,7 +42,7 @@ const Dashboard = () => {
       } catch (err) {
         console.error('Fetch error:', err);
         setError(err.response?.data?.message || err.message);
-        if (err.response?.status === 401) navigate('/login');
+        navigate('/login');
       } finally {
         setLoading(false);
       }
