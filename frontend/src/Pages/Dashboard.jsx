@@ -218,7 +218,7 @@ const Dashboard = () => {
 
                   <div className="flex justify-between border-t border-gray-200 pt-3">
                     <button
-                      onClick={() => navigate(`/resume/${resume._id}/edit`)}
+                      onClick={() => navigate(`/form/${resume._id}`)}
                       className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
                     >
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

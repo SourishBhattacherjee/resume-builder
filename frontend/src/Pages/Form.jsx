@@ -1,85 +1,152 @@
-import React, { useState } from 'react';
-import ResumePreview from '../Component/ResumePreview';
-import PersonalDetailsForm from '../Component/Form/PersonalDetailsForm';
-import EducationForm from '../Component/Form/EducationForm';
-import ExperienceForm from '../Component/Form/ExperienceForm';
-import ProjectForm from '../Component/Form/ProjectFrom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+import PersonalDetails from '../Component/Form/PersonalDetails';
+import Education from '../Component/Form/Education';
+import Experience from '../Component/Form/Experience';
+import Projects from '../Component/Form/Projects';
+import Certifications from '../Component/Form/Certifications';
+import Additional from '../Component/Form/Additional';
 
 const Form = () => {
+  const { resume_id, id } = useParams();
+  // Use whichever parameter exists
+  const actualResumeId = resume_id || id;
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
-  const [formData, setFormData] = useState({});
-  const [errors, setErrors] = useState({});
-  const [preview, setPreview] = useState(null);
+  const [formData, setFormData] = useState({
+    resumeName: '',
+    personalDetails: [{}],
+    education: [{}],
+    experience: [{}],
+    projects: [{}],
+    certifications: [{}],
+    skills: [],
+    languages: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const nextStep = () => setStep(prev => prev + 1);
-  const prevStep = () => setStep(prev => Math.max(0, prev - 1));
+  useEffect(() => {
+    const fetchResume = async () => {
+      try {
+        console.log('Resume ID from params:', actualResumeId); // Debug log
+        
+        if (actualResumeId) {
+          console.log('Making API call to:', `http://localhost:7000/resume/${actualResumeId}`);
+          
+          const response = await axios.get(`http://localhost:7000/resume/${actualResumeId}`);
+          
+          console.log('API Response Status:', response.status);
+          console.log('API Response Headers:', response.headers);
+          console.log('Fetched resume data:', response.data); // This should now log
+          console.log('Type of response.data:', typeof response.data);
+          console.log('Is response.data an object?', typeof response.data === 'object');
+          
+          // Additional debugging
+          if (response.data) {
+            console.log('Keys in response.data:', Object.keys(response.data));
+          }
+          
+          setFormData({
+            ...response.data,
+            // Ensure arrays exist
+            personalDetails: response.data.personalDetails || [{}],
+            education: response.data.education || [{}],
+            experience: response.data.experience || [{}],
+            projects: response.data.projects || [{}],
+            certifications: response.data.certifications || [{}],
+            skills: response.data.skills || [],
+            languages: response.data.languages || [],
+          });
+          
+          console.log('FormData after setting:', formData); // Note: This might show old state due to async nature
+        } else {
+          console.log('No resume ID provided, skipping API call');
+        }
+      } catch (err) {
+        console.error('Full error object:', err);
+        console.error('Error response:', err.response);
+        console.error('Error message:', err.message);
+        console.error('Error status:', err.response?.status);
+        console.error('Error data:', err.response?.data);
+        
+        setError(`Failed to load resume: ${err.message}`);
+      } finally {
+        console.log('Setting loading to false');
+        setLoading(false);
+      }
+    };
+
+    fetchResume();
+  }, [actualResumeId]);
+
+  // Add this useEffect to log formData changes
+  useEffect(() => {
+    console.log('FormData updated:', formData);
+  }, [formData]);
+
+  const nextStep = () => setStep((prev) => prev + 1);
+  const prevStep = () => setStep((prev) => prev - 1);
+
+  const handleSubmit = async () => {
+    try {
+      console.log('Submitting form data:', formData);
+      
+      if (actualResumeId) {
+        const response = await axios.post(`http://localhost:7000/update/${actualResumeId}`, formData);
+        console.log('Update response:', response.data);
+        alert('Resume updated successfully!');
+      } else {
+        const response = await axios.post('http://localhost:7000/resume', formData);
+        console.log('Create response:', response.data);
+        alert('Resume created successfully!');
+        navigate(`/form/${response.data._id}`);
+      }
+    } catch (err) {
+      console.error('Submit error:', err);
+      setError(`Submission failed: ${err.message}`);
+      alert('Failed to save resume. Please try again.');
+    }
+  };
 
   const renderStep = () => {
     switch (step) {
       case 0:
-        return (
-          <PersonalDetailsForm
-            formData={formData}
-            setFormData={setFormData}
-            errors={errors}
-            setErrors={setErrors}
-            nextStep={nextStep}
-          />
-        );
-      // case 1: return <EducationForm ... />;
+        return <PersonalDetails formData={formData} setFormData={setFormData} nextStep={nextStep} />;
       case 1:
-        return(
-          <EducationForm
-            formData={formData}
-            setFormData={setFormData}
-            errors={errors}
-            setErrors={setErrors}
-            nextStep={nextStep}
-            prevStep={prevStep}
-          />
-        );
-      // case 2: return <ExperienceForm ... />;
+        return <Education formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} />;
       case 2:
-        return(
-          <ExperienceForm
-            formData={formData}
-            setFormData={setFormData}
-            errors={errors}
-            setErrors={setErrors}
-            nextStep={nextStep}
-            prevStep={prevStep}
-          />
-        );
+        return <Experience formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} />;
       case 3:
-        return(
-          <ProjectForm
-            formData={formData}
-            setFormData={setFormData}
-            errors={errors}
-            setErrors={setErrors}
-            nextStep={nextStep}
-            prevStep={prevStep}
-          />
-        );
-      // etc.
+        return <Projects formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} />;
+      case 4:
+        return <Certifications formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} />;
+      case 5:
+        return <Additional 
+          formData={formData} 
+          setFormData={setFormData} 
+          prevStep={prevStep} 
+          handleSubmit={handleSubmit} 
+        />;
       default:
-        return <div>All steps complete.</div>;
+        return <div>Unknown Step</div>;
     }
   };
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left: Forms */}
-        <div className="lg:w-1/2 w-full bg-white p-6 rounded-xl shadow-md">
-          {renderStep()}
-        </div>
+  if (loading) {
+    return <div className="text-center mt-10 text-lg font-medium">Loading resume data...</div>;
+  }
 
-        {/* Right: Preview */}
-        <div className="lg:w-1/2 w-full">
-          <ResumePreview preview={preview} />
-        </div>
-      </div>
+  if (error) {
+    return <div className="text-center mt-10 text-lg text-red-500">{error}</div>;
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded-lg mt-10">
+      <div className="text-xl font-bold mb-6 text-center">Step {step + 1} of 6</div>
+      {renderStep()}
     </div>
   );
 };
