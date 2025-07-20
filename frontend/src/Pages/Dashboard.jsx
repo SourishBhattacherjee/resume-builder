@@ -25,16 +25,20 @@ const Dashboard = () => {
 
         setUser(userRes.data.user);
 
-        const resumesRes = await axios.get(
-          `http://localhost:7000/get/${userRes.data.user.userId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        try {
+          const resumesRes = await axios.get(
+            `http://localhost:7000/get/${userRes.data.user.userId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
 
-        if (!resumesRes.data.success || !resumesRes.data.data) {
-          throw new Error('Failed to fetch resumes');
+          setResumes(resumesRes.data.data || []);
+        } catch (resumesError) {
+          if (resumesError.response?.status === 404) {
+            setResumes([]);
+          } else {
+            throw resumesError;
+          }
         }
-
-        setResumes(resumesRes.data.data);
       } catch (err) {
         console.error('Fetch error:', err);
         setError(err.response?.data?.message || err.message);
@@ -85,30 +89,37 @@ const Dashboard = () => {
     }
   };
 
-  if (loading) return <div className="text-center mt-10 text-gray-600">Loading your data...</div>;
-  if (error) return <div className="text-red-500 text-center mt-10">Error: {error}</div>;
+  if (loading) {
+    return <div className="text-center mt-10 text-gray-600">Loading your data...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500 text-center mt-10">Error: {error}</div>;
+  }
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Welcome back, {user?.fullName || 'User'}!</h1>
+        <h1 className="text-3xl font-bold text-gray-800">
+          Welcome back, {user?.fullName || 'User'}!
+        </h1>
         <button
           onClick={() => navigate('/create-resume')}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow transition-colors"
         >
           + Create New Resume
         </button>
       </div>
 
       <section>
-        <h2 className="text-2xl font-semibold mb-4">Your Resumes ({resumes.length})</h2>
+        <h2 className="text-2xl font-semibold mb-6">Your Resumes ({resumes.length})</h2>
 
         {resumes.length === 0 ? (
           <div className="text-center mt-10">
             <p className="text-gray-600 mb-4">You don't have any resumes yet.</p>
             <button
               onClick={() => navigate('/create-resume')}
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded"
+              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition-colors"
             >
               Create Your First Resume
             </button>
@@ -118,53 +129,82 @@ const Dashboard = () => {
             {resumes.map((resume) => (
               <div
                 key={resume._id}
-                className="bg-white shadow-md rounded-xl p-5 border hover:shadow-lg transition duration-300"
+                className="bg-white rounded-lg border border-gray-200 shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
               >
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className="text-lg font-bold text-gray-800">
-                    {resume.name || 'Untitled Resume'}
-                  </h3>
-                  <span className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                    {resume.template || 'N/A'}
-                  </span>
-                </div>
-
-                <div className="text-sm text-gray-600 space-y-1 mb-3">
-                  <p><strong>Last Updated:</strong> {formatDate(resume.lastUpdated)}</p>
-                  <p><strong>Experience:</strong> {resume.experience?.length || 0} positions</p>
-                  <p><strong>Education:</strong> {resume.education?.length || 0} entries</p>
-                </div>
-
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {resume.skills?.slice(0, 5).map((skill, i) => (
-                    <span key={i} className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs">
-                      {skill}
+                <div className="p-5">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-xl font-bold text-gray-800 truncate">
+                      {resume.name || 'Untitled Resume'}
+                    </h3>
+                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                      {resume.template || 'Template N/A'}
                     </span>
-                  ))}
-                  {resume.skills?.length > 5 && (
-                    <span className="text-xs text-gray-500">+{resume.skills.length - 5} more</span>
-                  )}
-                </div>
+                  </div>
 
-                <div className="flex justify-between items-center mt-4">
-                  <button
-                    onClick={() => navigate(`/resume/${resume._id}/edit`)}
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(resume._id)}
-                    className="text-sm text-red-600 hover:underline"
-                  >
-                    Delete
-                  </button>
-                  <button
-                    onClick={() => handleDownload(resume._id)}
-                    className="text-sm text-green-600 hover:underline"
-                  >
-                    Download PDF
-                  </button>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center text-sm text-gray-600">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Updated: {formatDate(resume.lastUpdated)}
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      Experience: {resume.experience?.length || 0} positions
+                    </div>
+                    <div className="flex items-center text-sm text-gray-600">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                      Education: {resume.education?.length || 0} entries
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-1">Top Skills:</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {resume.skills?.slice(0, 5).map((skill, i) => (
+                        <span key={i} className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                          {skill}
+                        </span>
+                      ))}
+                      {resume.skills?.length > 5 && (
+                        <span className="text-xs text-gray-500">+{resume.skills.length - 5} more</span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between border-t border-gray-200 pt-3">
+                    <button
+                      onClick={() => navigate(`/resume/${resume._id}/edit`)}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center"
+                    >
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(resume._id)}
+                      className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center"
+                    >
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Delete
+                    </button>
+                    <button
+                      onClick={() => handleDownload(resume._id)}
+                      className="text-green-600 hover:text-green-800 text-sm font-medium flex items-center"
+                    >
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

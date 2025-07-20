@@ -4,7 +4,6 @@ import PersonalDetailsForm from '../Component/Form/PersonalDetailsForm';
 import EducationForm from '../Component/Form/EducationForm';
 import ExperienceForm from '../Component/Form/ExperienceForm';
 import ProjectForm from '../Component/Form/ProjectFrom';
-// Future: import EducationForm, ExperienceForm, etc.
 
 const Form = () => {
   const [step, setStep] = useState(0);
