@@ -1,5 +1,5 @@
 const express = require('express');
-const { createResume,updateResume,deleteResume,getResume } = require('../controllers/resumeController');
+const { createResume,updateResume,deleteResume,getResume,downloadResume } = require('../controllers/resumeController');
 const router = express.Router();
 
 
@@ -7,5 +7,6 @@ router.post('/create/:id',createResume);
 router.post('/update/:id',updateResume);
 router.delete('/delete/:id',deleteResume);
 router.get('/get/:id',getResume);
+router.get('/download/:id',downloadResume);
 
 module.exports = router;

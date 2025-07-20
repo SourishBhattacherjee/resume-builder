@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
   const [resumes, setResumes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
@@ -66,39 +69,77 @@ const Dashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setResumes(resumes.filter((r) => r._id !== resumeId));
+      toast.success('Resume deleted successfully');
     } catch (err) {
-      alert('Failed to delete resume');
+      toast.error('Failed to delete resume');
     }
   };
 
   const handleDownload = async (resumeId) => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`http://localhost:7000/download/${resumeId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      if (!token) throw new Error('Authentication required');
+
+      setDownloading(true);
+
+      const response = await axios.get(`http://localhost:7000/download/${resumeId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Cache-Control': 'no-cache'
+        },
         responseType: 'blob',
+        timeout: 30000
       });
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+
+      const contentDisposition = response.headers['content-disposition'];
+      const filename = contentDisposition
+        ? contentDisposition.split('filename=')[1].replace(/"/g, '')
+        : `resume_${resumeId}.pdf`;
+
+      const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'resume.pdf');
+      link.setAttribute('download', filename);
+      link.style.display = 'none';
+
       document.body.appendChild(link);
       link.click();
-    } catch (err) {
-      alert('Download failed');
+
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+      }, 100);
+
+      toast.success('Download started successfully');
+    } catch (error) {
+      console.error('Download error:', error);
+      let errorMessage = 'Download failed';
+
+      if (error.response) {
+        if (error.response.status === 401) {
+          errorMessage = 'Please login to download';
+        } else if (error.response.status === 404) {
+          errorMessage = 'Resume not found';
+        } else {
+          errorMessage = error.response.data.message || errorMessage;
+        }
+      } else if (error.message.includes('timeout')) {
+        errorMessage = 'Request timed out';
+      }
+
+      toast.error(errorMessage);
+    } finally {
+      setDownloading(false);
     }
   };
 
-  if (loading) {
-    return <div className="text-center mt-10 text-gray-600">Loading your data...</div>;
-  }
+  if (loading) return <div className="text-center mt-10 text-gray-600">Loading your data...</div>;
 
-  if (error) {
-    return <div className="text-red-500 text-center mt-10">Error: {error}</div>;
-  }
+  if (error) return <div className="text-red-500 text-center mt-10">Error: {error}</div>;
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
+      <ToastContainer />
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-800">
           Welcome back, {user?.fullName || 'User'}!
@@ -110,8 +151,7 @@ const Dashboard = () => {
           + Create New Resume
         </button>
       </div>
-
-      <section>
+<section>
         <h2 className="text-2xl font-semibold mb-6">Your Resumes ({resumes.length})</h2>
 
         {resumes.length === 0 ? (
@@ -215,4 +255,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default Dashboard; 

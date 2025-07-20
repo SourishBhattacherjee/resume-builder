@@ -1,6 +1,9 @@
 const generateResumeLatex = require('../helper/latexGenerators');
 const saveLatexToFile = require('../helper/saveLatexToFile');
 const Resume = require('../models/Resume');
+const fs = require('fs');
+const path = require('path');
+const { execSync,exec } = require('child_process'); 
 const createResume = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -45,10 +48,45 @@ const updateResume = async (req, res) => {
     const updatedResume = await Resume.findByIdAndUpdate(id, req.body, { new: true });
     if (!updatedResume) return res.status(404).json({ error: 'Resume not found' });
 
+    // Generate LaTeX content
     const latex = generateResumeLatex(updatedResume);
-    const { filename } = saveLatexToFile(latex, id);
+    
+    // Save LaTeX file
+    const { filePath: texPath } = saveLatexToFile(latex, id);
+    
+    // Compile to PDF
+    const pdfPath = texPath.replace('.tex', '.pdf');
+    const outputDir = path.dirname(texPath);
+    
+    try {
+      // Compile LaTeX to PDF
+      execSync(`pdflatex  -output-directory=${outputDir} ${texPath}`, {
+        stdio: 'ignore'
+      });
+      
+      // Cleanup auxiliary files
+      ['aux', 'log', 'out'].forEach(ext => {
+        try {
+          fs.unlinkSync(texPath.replace('.tex', `.${ext}`));
+        } catch (e) {}
+      });
+      
+      res.json({ 
+        success: true, 
+        resume: updatedResume,
+        latexFile: path.basename(texPath),
+        pdfFile: path.basename(pdfPath)
+      });
+      
+    } catch (compileError) {
+      console.error('LaTeX compilation failed:', compileError);
+      return res.status(500).json({ 
+        error: 'PDF generation failed',
+        details: 'LaTeX compilation error',
+        latexSaved: path.basename(texPath) // Still return the .tex file info
+      });
+    }
 
-    res.json({ success: true, resume: updatedResume, latexFile: filename });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -95,6 +133,63 @@ const getResume = async (req, res) => {
   }
 };
 
+const downloadResume = async (req, res) => {
+  const { id } = req.params;
+  const latexDir = path.join(__dirname, '..', 'latex_files');
+  const outputDir = path.join(__dirname, '..', 'generated_pdfs');
+
+  try {
+    // Create directories if they don't exist
+    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+    // Find the latest .tex file for this resume ID
+    const files = fs.readdirSync(latexDir);
+    const resumeFile = files.find(file => file.startsWith(`resume_${id}`) && file.endsWith('.tex'));
+    
+    if (!resumeFile) {
+      return res.status(404).json({ error: 'Resume not found' });
+    }
+
+    const texPath = path.join(latexDir, resumeFile);
+    const pdfFilename = resumeFile.replace('.tex', '.pdf');
+    const pdfPath = path.join(outputDir, pdfFilename);
+
+    // Compile LaTeX to PDF
+    await new Promise((resolve, reject) => {
+      exec(`pdflatex -output-directory=${outputDir} ${texPath}`, (error, stdout, stderr) => {
+        if (error) {
+          console.error('LaTeX compilation error:', stderr);
+          return reject(new Error('Failed to compile LaTeX'));
+        }
+        resolve();
+      });
+    });
+
+    // Check if PDF was generated
+    if (!fs.existsSync(pdfPath)) {
+      return res.status(500).json({ error: 'PDF generation failed' });
+    }
+
+    // Delete the .tex file after successful PDF generation
+    fs.unlinkSync(texPath); // <-- Cleanup here
+    console.log(`Deleted .tex file: ${texPath}`);
+
+    // Send the PDF file
+    res.download(pdfPath, pdfFilename, (err) => {
+      if (err) {
+        console.error('Download error:', err);
+        res.status(500).json({ error: 'Download failed' });
+      }
+      fs.unlinkSync(pdfPath); // Delete the PDF after download
+    });
+
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
 module.exports = {
-  createResume,getResume,updateResume,deleteResume
+  createResume,getResume,updateResume,deleteResume,downloadResume
 }

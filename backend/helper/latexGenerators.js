@@ -48,7 +48,7 @@ function generateResumeLatex(resumeData) {
 
   const personal = resumeData.personalDetails?.[0] || {};
   const tokens = {
-    fullName: escapeLatex(resumeData.fullName || ''),
+    fullName: escapeLatex(personal.fullName || ''),
     email: escapeLatex(personal.email || ''),
     linkedin: escapeLatex(personal.linkedin || ''),
     github: escapeLatex(personal.github || ''),
