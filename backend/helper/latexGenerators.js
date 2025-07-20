@@ -1,29 +1,71 @@
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
 
-// Individual template generators
-const template1 = require('./templates')
-const template2 = require('./templates/template2');
-const template3 = require('./templates/template3');
+const escapeLatex = text => (text||'')
+  .replace(/\\/g,'\\textbackslash ')
+  .replace(/&/g,'\\&').replace(/%/g,'\\%')
+  .replace(/\$/g,'\\$').replace(/#/g,'\\#')
+  .replace(/_/g,'\\_').replace(/{/g,'\\{')
+  .replace(/}/g,'\\}').replace(/~/g,'\\textasciitilde ')
+  .replace(/\^/g,'\\textasciicircum ');
 
-const generateResumeLatex = (resumeData) => {
-  const template = resumeData.template || 'template1'; // fallback
-
-  // Dynamically call the right template function
-  let latex = '';
-  switch (template) {
-    case 'template2':
-      latex = template2(resumeData);
-      break;
-    case 'template3':
-      latex = template3(resumeData);
-      break;
-    case 'template1':
-    default:
-      latex = template1(resumeData);
-  }
-
-  return latex;
+const formatDate = d => {
+  if (!d) return '';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('en-US',{ month:'short', year:'numeric' });
 };
+
+const formatEducation = edArr => edArr.map(e =>
+  `\\textbf{${escapeLatex(e.institution)}} \\hfill ${formatDate(e.startDate)}--${formatDate(e.endDate)}\\\\\n` +
+  `${escapeLatex(e.degree)}\\\\\n` +
+  (e.relatedCoursework ? `\\textit{Related Coursework:} ${escapeLatex(e.relatedCoursework)}\\\\\n` : '')
+).join('\n');
+
+const formatExperience = exArr => exArr.map(e => {
+  const end = e.currentlyWorking ? 'Present' : formatDate(e.endDate);
+  return `\\textbf{${escapeLatex(e.companyName)}} \\hfill ${escapeLatex(e.location)}\\\\\n` +
+    `\\textit{${formatDate(e.startDate)}--${end}}\\\\\n` +
+    '\\begin{itemize}\n' +
+    e.responsibilities.map(r => `  \\item ${escapeLatex(r)}\n`).join('') +
+    '\\end{itemize}\n';
+}).join('\n');
+
+const formatProjects = prArr => prArr.map(p =>
+  `\\textbf{${escapeLatex(p.name)}}: \\href{${escapeLatex(p.link)}}{Link}\\\\\n` +
+  '\\begin{itemize}\n' +
+  p.description.map(d => `  \\item ${escapeLatex(d)}\n`).join('') +
+  '\\end{itemize}\n'
+).join('\n');
+
+const formatList = arr => arr.map(a => escapeLatex(a)).join(' $\\bullet$ ');
+
+function generateResumeLatex(resumeData) {
+  const tmpl = resumeData.template || 'template1';
+  const tplPath = path.join(__dirname, 'templates', `${tmpl}.tex`);
+  if (!fs.existsSync(tplPath)) throw new Error(`Missing template: ${tmpl}`);
+
+  let content = fs.readFileSync(tplPath, 'utf8');
+
+  const personal = resumeData.personalDetails?.[0] || {};
+  const tokens = {
+    fullName: escapeLatex(resumeData.fullName || ''),
+    email: escapeLatex(personal.email || ''),
+    linkedin: escapeLatex(personal.linkedin || ''),
+    github: escapeLatex(personal.github || ''),
+    education: formatEducation(resumeData.education || []),
+    experience: formatExperience(resumeData.experience || []),
+    projects: formatProjects(resumeData.projects || []),
+    skills: formatList(resumeData.skills || []),
+    languages: escapeLatex((resumeData.languages||[]).join(', ')),
+    certifications: escapeLatex((resumeData.certifications||[])
+                                 .map(c=>c.name).join(', '))
+  };
+
+  Object.entries(tokens).forEach(([key, val]) => {
+    content = content.replace(new RegExp(`{{${key}}}`, 'g'), val);
+  });
+
+  return content;
+}
 
 module.exports = generateResumeLatex;

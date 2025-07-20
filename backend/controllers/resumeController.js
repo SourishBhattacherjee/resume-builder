@@ -1,4 +1,4 @@
-const { generateResumeLatex} = require('../helper/latexGenerators');
+const generateResumeLatex = require('../helper/latexGenerators');
 const saveLatexToFile = require('../helper/saveLatexToFile');
 const Resume = require('../models/Resume');
 const createResume = async (req, res) => {
@@ -42,35 +42,30 @@ const createResume = async (req, res) => {
 const updateResume = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const updatedResume = await Resume.findByIdAndUpdate(id, req.body, { new: true });
+    if (!updatedResume) return res.status(404).json({ error: 'Resume not found' });
 
-    const updatedResume = await Resume.findByIdAndUpdate(id, updateData, { new: true });
+    const latex = generateResumeLatex(updatedResume);
+    const { filename } = saveLatexToFile(latex, id);
 
-    if (!updatedResume) {
-      return res.status(404).json({ error: 'Resume not found' });
-    }
-
-    // Generate LaTeX using selected template
-    const latexContent = generateResumeLatex(updatedResume);
-
-    // Save LaTeX content to file
-    const { filename } = saveLatexToFile(latexContent, id);
-
-    res.json({
-      success: true,
-      message: 'Resume updated and LaTeX generated.',
-      resume: updatedResume,
-      latexFile: filename
-    });
-
+    res.json({ success: true, resume: updatedResume, latexFile: filename });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Something went wrong' });
+    res.status(500).json({ error: err.message });
   }
 };
-const deleteResume = (req,res) => {
-  
-}
+const deleteResume = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedResume = await Resume.findByIdAndDelete(id);
+    if (!deletedResume) return res.status(404).json({ error: 'Resume not found' });
+
+    res.json({ success: true, message: 'Resume deleted successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+};
 const getResume = async (req, res) => {
   try {
     const userId = req.params.id;
