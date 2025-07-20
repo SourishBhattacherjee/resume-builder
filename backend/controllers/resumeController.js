@@ -1,4 +1,5 @@
-const { generateResumeLatex, saveLatexToFile } = require('../helper/latexGenerators');
+const { generateResumeLatex} = require('../helper/latexGenerators');
+const saveLatexToFile = require('../helper/saveLatexToFile');
 const Resume = require('../models/Resume');
 const createResume = async (req, res) => {
   try {
@@ -49,24 +50,24 @@ const updateResume = async (req, res) => {
       return res.status(404).json({ error: 'Resume not found' });
     }
 
-    // Generate LaTeX content
+    // Generate LaTeX using selected template
     const latexContent = generateResumeLatex(updatedResume);
-    
-    // Save to file
+
+    // Save LaTeX content to file
     const { filename } = saveLatexToFile(latexContent, id);
 
-    res.json({ 
-      success: true, 
-      message: 'Resume updated and LaTeX generated.', 
+    res.json({
+      success: true,
+      message: 'Resume updated and LaTeX generated.',
       resume: updatedResume,
       latexFile: filename
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Something went wrong' });
   }
 };
-
 const deleteResume = (req,res) => {
   
 }
