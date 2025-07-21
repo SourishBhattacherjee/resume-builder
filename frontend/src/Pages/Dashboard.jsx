@@ -18,7 +18,7 @@ const Dashboard = () => {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('No token found');
 
-        const userRes = await axios.get('http://localhost:7000/profile', {
+        const userRes = await axios.get('/profile', {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -30,7 +30,7 @@ const Dashboard = () => {
 
         try {
           const resumesRes = await axios.get(
-            `http://localhost:7000/get/${userRes.data.user.userId}`,
+            `/get/${userRes.data.user.userId}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
@@ -65,7 +65,7 @@ const Dashboard = () => {
   const handleDelete = async (resumeId) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:7000/delete/${resumeId}`, {
+      await axios.delete(`/delete/${resumeId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setResumes(resumes.filter((r) => r._id !== resumeId));
@@ -82,7 +82,7 @@ const Dashboard = () => {
 
       setDownloading(true);
 
-      const response = await axios.get(`http://localhost:7000/download/${resumeId}`, {
+      const response = await axios.get(`/download/${resumeId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Cache-Control': 'no-cache'

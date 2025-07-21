@@ -34,7 +34,7 @@ const Form = () => {
     const fetchResume = async () => {
       try {
         if (actualResumeId) {
-          const response = await axios.get(`http://localhost:7000/resume/${actualResumeId}`);
+          const response = await axios.get(`/resume/${actualResumeId}`);
           setFormData({
             ...response.data,
             personalDetails: response.data.personalDetails || [{}],
@@ -67,7 +67,7 @@ const Form = () => {
   const generatePreview = async () => {
     try {
       setIsGeneratingPreview(true);
-      const response = await axios.post(`http://localhost:7000/update/${actualResumeId}`, formData);
+      const response = await axios.post(`/update/${actualResumeId}`, formData);
       setPreview(response.data.image);
     } catch (err) {
       console.error('Preview generation error:', err);
@@ -81,11 +81,11 @@ const Form = () => {
   try {
     let response;
     if (actualResumeId) {
-      response = await axios.post(`http://localhost:7000/update/${actualResumeId}`, formData);
+      response = await axios.post(`/update/${actualResumeId}`, formData);
       // The preview image is now included in the response
       setPreview(response.data.previewImage);
     } else {
-      response = await axios.post('http://localhost:7000/resume', formData);
+      response = await axios.post('/resume', formData);
       navigate(`/form/${response.data._id}`);
     }
   } catch (err) {
