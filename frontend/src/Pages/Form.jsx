@@ -8,10 +8,10 @@ import Experience from '../Component/Form/Experience';
 import Projects from '../Component/Form/Projects';
 import Certifications from '../Component/Form/Certifications';
 import Additional from '../Component/Form/Additional';
+import ResumePreview from '../Component/ResumePreview'; // Import the preview component
 
 const Form = () => {
   const { resume_id, id } = useParams();
-  // Use whichever parameter exists
   const actualResumeId = resume_id || id;
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
@@ -27,31 +27,16 @@ const Form = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [preview, setPreview] = useState(null); // State for storing preview image
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false); // Loading state for preview
 
   useEffect(() => {
     const fetchResume = async () => {
       try {
-        console.log('Resume ID from params:', actualResumeId); // Debug log
-        
         if (actualResumeId) {
-          console.log('Making API call to:', `http://localhost:7000/resume/${actualResumeId}`);
-          
           const response = await axios.get(`http://localhost:7000/resume/${actualResumeId}`);
-          
-          console.log('API Response Status:', response.status);
-          console.log('API Response Headers:', response.headers);
-          console.log('Fetched resume data:', response.data); // This should now log
-          console.log('Type of response.data:', typeof response.data);
-          console.log('Is response.data an object?', typeof response.data === 'object');
-          
-          // Additional debugging
-          if (response.data) {
-            console.log('Keys in response.data:', Object.keys(response.data));
-          }
-          
           setFormData({
             ...response.data,
-            // Ensure arrays exist
             personalDetails: response.data.personalDetails || [{}],
             education: response.data.education || [{}],
             experience: response.data.experience || [{}],
@@ -61,20 +46,14 @@ const Form = () => {
             languages: response.data.languages || [],
           });
           
-          console.log('FormData after setting:', formData); // Note: This might show old state due to async nature
-        } else {
-          console.log('No resume ID provided, skipping API call');
+          // If there's a preview image in the response, set it
+          if (response.data.previewImage) {
+            setPreview(response.data.previewImage);
+          }
         }
       } catch (err) {
-        console.error('Full error object:', err);
-        console.error('Error response:', err.response);
-        console.error('Error message:', err.message);
-        console.error('Error status:', err.response?.status);
-        console.error('Error data:', err.response?.data);
-        
         setError(`Failed to load resume: ${err.message}`);
       } finally {
-        console.log('Setting loading to false');
         setLoading(false);
       }
     };
@@ -82,32 +61,39 @@ const Form = () => {
     fetchResume();
   }, [actualResumeId]);
 
-  // Add this useEffect to log formData changes
-  useEffect(() => {
-    console.log('FormData updated:', formData);
-  }, [formData]);
-
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);
 
-  const handleSubmit = async () => {
+  const generatePreview = async () => {
     try {
-      console.log('Submitting form data:', formData);
-      
-      if (actualResumeId) {
-        const response = await axios.post(`http://localhost:7000/update/${actualResumeId}`, formData);
-      } else {
-        const response = await axios.post('http://localhost:7000/resume', formData);
-        console.log('Create response:', response.data);
-        alert('Resume created successfully!');
-        navigate(`/form/${response.data._id}`);
-      }
+      setIsGeneratingPreview(true);
+      const response = await axios.post(`http://localhost:7000/update/${actualResumeId}`, formData);
+      setPreview(response.data.image);
     } catch (err) {
-      console.error('Submit error:', err);
-      setError(`Submission failed: ${err.message}`);
-      alert('Failed to save resume. Please try again.');
+      console.error('Preview generation error:', err);
+      setError('Failed to generate preview');
+    } finally {
+      setIsGeneratingPreview(false);
     }
   };
+
+  const handleSubmit = async () => {
+  try {
+    let response;
+    if (actualResumeId) {
+      response = await axios.post(`http://localhost:7000/update/${actualResumeId}`, formData);
+      // The preview image is now included in the response
+      setPreview(response.data.previewImage);
+    } else {
+      response = await axios.post('http://localhost:7000/resume', formData);
+      navigate(`/form/${response.data._id}`);
+    }
+  } catch (err) {
+    console.error('Submit error:', err);
+    setError(`Submission failed: ${err.message}`);
+    alert('Failed to save resume. Please try again.');
+  }
+};
 
   const renderStep = () => {
     switch (step) {
@@ -142,9 +128,17 @@ const Form = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded-lg mt-10">
-      <div className="text-xl font-bold mb-6 text-center">Step {step + 1} of 6</div>
-      {renderStep()}
+    <div className="flex flex-col lg:flex-row gap-6 max-w-6xl mx-auto p-6">
+      {/* Form Section */}
+      <div className="lg:w-1/2 bg-white shadow-md rounded-lg p-6">
+        <div className="text-xl font-bold mb-6 text-center">Step {step + 1} of 6</div>
+        {renderStep()}
+      </div>
+      
+      {/* Preview Section */}
+      <div className="lg:w-1/2">
+        <ResumePreview preview={preview} />
+      </div>
     </div>
   );
 };

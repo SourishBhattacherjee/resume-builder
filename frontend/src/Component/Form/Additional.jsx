@@ -1,6 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Additional = ({ formData = { skills: [], languages: [] }, setFormData, prevStep, handleSubmit }) => {
+  const navigate = useNavigate();
+  
   // Ensure arrays exist or default to empty arrays
   const skills = formData.skills || [];
   const languages = formData.languages || [];
@@ -22,6 +25,15 @@ const Additional = ({ formData = { skills: [], languages: [] }, setFormData, pre
     const updatedList = [...(formData[field] || [])];
     updatedList.splice(index, 1);
     setFormData({ ...formData, [field]: updatedList });
+  };
+
+  const handleFinalSubmit = async () => {
+    // Call the original handleSubmit if it exists
+    if (handleSubmit) {
+      await handleSubmit();
+    }
+    // Navigate to dashboard after submission
+    navigate('/dashboard');
   };
 
   return (
@@ -68,7 +80,7 @@ const Additional = ({ formData = { skills: [], languages: [] }, setFormData, pre
           Back
         </button>
         <button 
-          onClick={handleSubmit} 
+          onClick={handleFinalSubmit} 
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
         >
           Submit

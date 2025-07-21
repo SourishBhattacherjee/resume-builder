@@ -59,31 +59,52 @@ const updateResume = async (req, res) => {
     const outputDir = path.dirname(texPath);
     
     try {
-      // Compile LaTeX to PDF
-      execSync(`pdflatex  -output-directory=${outputDir} ${texPath}`, {
+      // 1. Compile LaTeX to PDF
+      execSync(`pdflatex -output-directory=${outputDir} ${texPath}`, {
         stdio: 'ignore'
       });
       
-      // Cleanup auxiliary files
+      // 2. Convert PDF to PNG using Ghostscript
+      const pngPath = pdfPath.replace('.pdf', '.png');
+      execSync(`gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r150 -sOutputFile=${pngPath} ${pdfPath}`);
+      
+      // 3. Read the PNG file and convert to base64
+      const imageBuffer = fs.readFileSync(pngPath);
+      const base64Image = imageBuffer.toString('base64');
+      
+      // 4. Cleanup auxiliary files
       ['aux', 'log', 'out'].forEach(ext => {
         try {
           fs.unlinkSync(texPath.replace('.tex', `.${ext}`));
         } catch (e) {}
       });
+
+      // 5. Update the resume with the preview image in the database
+      const resumeWithPreview = await Resume.findByIdAndUpdate(
+        id,
+        { 
+          ...req.body,
+          previewImage: `data:image/png;base64,${base64Image}`,
+          pdfPath: path.basename(pdfPath),
+          latexPath: path.basename(texPath)
+        },
+        { new: true }
+      );
       
       res.json({ 
         success: true, 
-        resume: updatedResume,
+        resume: resumeWithPreview,
         latexFile: path.basename(texPath),
-        pdfFile: path.basename(pdfPath)
+        pdfFile: path.basename(pdfPath),
+        previewImage: `data:image/png;base64,${base64Image}`
       });
       
     } catch (compileError) {
-      console.error('LaTeX compilation failed:', compileError);
+      console.error('Processing failed:', compileError);
       return res.status(500).json({ 
         error: 'PDF generation failed',
-        details: 'LaTeX compilation error',
-        latexSaved: path.basename(texPath) // Still return the .tex file info
+        details: compileError.message,
+        latexSaved: path.basename(texPath)
       });
     }
 
@@ -135,53 +156,59 @@ const getResume = async (req, res) => {
 
 const downloadResume = async (req, res) => {
   const { id } = req.params;
-  const latexDir = path.join(__dirname, '..', 'latex_files');
-  const outputDir = path.join(__dirname, '..', 'generated_pdfs');
+  const outputDir = path.join(__dirname, '..', 'latex_files');
 
   try {
-    // Create directories if they don't exist
-    if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
-
-    // Find the latest .tex file for this resume ID
-    const files = fs.readdirSync(latexDir);
-    const resumeFile = files.find(file => file.startsWith(`resume_${id}`) && file.endsWith('.tex'));
+    // Check if PDF directory exists
+    if (!fs.existsSync(outputDir)) {
+      return res.status(404).json({ error: 'No resumes generated yet' });
+    }
+    const existingTexFiles = fs.readdirSync(outputDir).filter(file => 
+      file.startsWith(`resume_${id}`) && file.endsWith('.tex')
+    );
     
-    if (!resumeFile) {
-      return res.status(404).json({ error: 'Resume not found' });
+    existingTexFiles.forEach(texFile => {
+      try {
+        fs.unlinkSync(path.join(outputDir, texFile));
+      } catch (err) {
+        console.error(`Error deleting .tex file ${texFile}:`, err);
+      }
+    });
+
+    // Find the PDF file for this resume ID
+    const pdfFiles = fs.readdirSync(outputDir);
+    const pdfFilename = pdfFiles.find(file => 
+      file.startsWith(`resume_${id}`) && file.endsWith('.pdf')
+    );
+
+    if (!pdfFilename) {
+      return res.status(404).json({ error: 'Resume PDF not found' });
     }
 
-    const texPath = path.join(latexDir, resumeFile);
-    const pdfFilename = resumeFile.replace('.tex', '.pdf');
     const pdfPath = path.join(outputDir, pdfFilename);
 
-    // Compile LaTeX to PDF
-    await new Promise((resolve, reject) => {
-      exec(`pdflatex -output-directory=${outputDir} ${texPath}`, (error, stdout, stderr) => {
-        if (error) {
-          console.error('LaTeX compilation error:', stderr);
-          return reject(new Error('Failed to compile LaTeX'));
-        }
-        resolve();
-      });
-    });
+    // Set proper headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${pdfFilename}"`);
 
-    // Check if PDF was generated
-    if (!fs.existsSync(pdfPath)) {
-      return res.status(500).json({ error: 'PDF generation failed' });
-    }
-
-    // Send the PDF file
-    res.download(pdfPath, pdfFilename, (err) => {
-      if (err) {
-        console.error('Download error:', err);
-        res.status(500).json({ error: 'Download failed' });
+    // Create read stream
+    const fileStream = fs.createReadStream(pdfPath);
+    
+    fileStream.on('error', (err) => {
+      console.error('File stream error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Error streaming PDF file' });
       }
-      fs.unlinkSync(pdfPath); // Delete the PDF after download
     });
+
+    // Pipe the file to the response
+    fileStream.pipe(res);
 
   } catch (error) {
     console.error('Error:', error);
-    res.status(500).json({ error: error.message });
+    if (!res.headersSent) {
+      res.status(500).json({ error: error.message });
+    }
   }
 };
 const getResumeById = async (req, res) => {

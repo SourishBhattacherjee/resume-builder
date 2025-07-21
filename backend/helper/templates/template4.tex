@@ -1,0 +1,47 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+% Reduce item spacing
+\setlist[itemize]{noitemsep, topsep=0pt}
+
+\begin{document}
+
+\begin{center}
+{\huge \textbf{ {{fullName}} }}\\
+\href{mailto:{{email}}}{{{email}}} $|$ 
+\href{https://www.linkedin.com/in/{{linkedin}}}{LinkedIn} $|$ 
+\href{https://github.com/{{github}}}{GitHub}
+\end{center}
+
+\begin{minipage}[t]{0.65\textwidth}
+\section*{Experience}
+{{experience}}
+
+\section*{Projects}
+{{projects}}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.30\textwidth}
+\section*{Education}
+{{education}}
+
+\section*{Skills}
+\begin{itemize}
+\item {{skills}}
+\end{itemize}
+
+\section*{Languages}
+\begin{itemize}
+\item {{languages}}
+\end{itemize}
+
+\section*{Certifications}
+\begin{itemize}
+\item {{certifications}}
+\end{itemize}
+\end{minipage}
+
+\end{document}

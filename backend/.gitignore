@@ -1,2 +1,2 @@
 *.env
-backend/generated_pdfs/
+latex_files/

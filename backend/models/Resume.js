@@ -96,7 +96,8 @@ const resumeSchema = new mongoose.Schema({
   lastUpdated: {
     type: Date,
     default: Date.now
-  }
+  },
+  previewImage: String
 });
 
 const Resume = mongoose.model('Resume', resumeSchema);
