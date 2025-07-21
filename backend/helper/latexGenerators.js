@@ -16,14 +16,14 @@ const formatDate = d => {
 };
 
 const formatEducation = edArr => edArr.map(e =>
-  `\\textbf{${escapeLatex(e.institution)}} \\hfill ${formatDate(e.startDate)}--${formatDate(e.endDate)}\\\\\n` +
+  `\\noindent\\textbf{${escapeLatex(e.institution)}} \\hfill ${formatDate(e.startDate)}--${formatDate(e.endDate)}\\\\\n` +
   `${escapeLatex(e.degree)}\\\\\n` +
   (e.relatedCoursework ? `\\textit{Related Coursework:} ${escapeLatex(e.relatedCoursework)}\\\\\n` : '')
 ).join('\n');
 
 const formatExperience = exArr => exArr.map(e => {
   const end = e.currentlyWorking ? 'Present' : formatDate(e.endDate);
-  return `\\textbf{${escapeLatex(e.companyName)}} \\hfill ${escapeLatex(e.location)}\\\\\n` +
+  return `\\noindent\\textbf{${escapeLatex(e.companyName)}} \\hfill ${escapeLatex(e.location)}\\\\\n` +
     `\\textit{${formatDate(e.startDate)}--${end}}\\\\\n` +
     '\\begin{itemize}\n' +
     e.responsibilities.map(r => `  \\item ${escapeLatex(r)}\n`).join('') +
@@ -31,7 +31,7 @@ const formatExperience = exArr => exArr.map(e => {
 }).join('\n');
 
 const formatProjects = prArr => prArr.map(p =>
-  `\\textbf{${escapeLatex(p.name)}}: \\href{${escapeLatex(p.link)}}{Link}\\\\\n` +
+  `\\noindent\\textbf{${escapeLatex(p.name)}}: \\href{${escapeLatex(p.link)}}{Link}\\\\\n` +
   '\\begin{itemize}\n' +
   p.description.map(d => `  \\item ${escapeLatex(d)}\n`).join('') +
   '\\end{itemize}\n'
