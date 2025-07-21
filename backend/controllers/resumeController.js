@@ -3,7 +3,8 @@ const saveLatexToFile = require('../helper/saveLatexToFile');
 const Resume = require('../models/Resume');
 const fs = require('fs');
 const path = require('path');
-const { execSync,exec } = require('child_process'); 
+const { execSync,exec } = require('child_process');
+const connectDB = require('../utils/db');
 const createResume = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -44,6 +45,7 @@ const createResume = async (req, res) => {
 };
 const updateResume = async (req, res) => {
   try {
+    connectDB();
     const { id } = req.params;
     const updatedResume = await Resume.findByIdAndUpdate(id, req.body, { new: true });
     if (!updatedResume) return res.status(404).json({ error: 'Resume not found' });
@@ -115,6 +117,7 @@ const updateResume = async (req, res) => {
 };
 const deleteResume = async (req, res) => {
   try {
+    connectDB();
     const { id } = req.params;
     const deletedResume = await Resume.findByIdAndDelete(id);
     if (!deletedResume) return res.status(404).json({ error: 'Resume not found' });
@@ -127,6 +130,7 @@ const deleteResume = async (req, res) => {
 };
 const getResume = async (req, res) => {
   try {
+    connectDB();
     const userId = req.params.id;
     const resumes = await Resume.find({ user: userId })
       .select('-__v')
@@ -160,6 +164,7 @@ const downloadResume = async (req, res) => {
 
   try {
     // Check if PDF directory exists
+    connectDB();
     if (!fs.existsSync(outputDir)) {
       return res.status(404).json({ error: 'No resumes generated yet' });
     }
@@ -213,6 +218,7 @@ const downloadResume = async (req, res) => {
 };
 const getResumeById = async (req, res) => {
   try {
+    connectDB();
     const resumeId = req.params.id;
     const resume = await Resume.findById(resumeId);
 
