@@ -1,6 +1,6 @@
 import React from 'react';
 
-const PersonalDetails = ({ formData, setFormData, nextStep, prevStep }) => {
+const PersonalDetails = ({ formData, setFormData, nextStep, prevStep, handleSubmit }) => {
   const personal = formData.personalDetails?.[0] || {};
 
   const handleChange = (e) => {
@@ -23,7 +23,7 @@ const PersonalDetails = ({ formData, setFormData, nextStep, prevStep }) => {
       ))}
       <div className="flex justify-between">
         <button onClick={prevStep} className="bg-gray-400 text-white px-4 py-2 rounded-lg">Back</button>
-        <button onClick={nextStep} className="bg-blue-600 text-white px-4 py-2 rounded-lg">Next</button>
+        <button onClick={() => { nextStep(); handleSubmit(); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg">Next</button>
       </div>
     </div>
   );

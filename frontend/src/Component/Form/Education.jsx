@@ -2,7 +2,7 @@ import React from 'react';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
-const Education = ({ formData, setFormData, nextStep, prevStep }) => {
+const Education = ({ formData, setFormData, nextStep, prevStep,handleSubmit}) => {
   const handleChange = (index, e) => {
     const updated = [...formData.education];
     updated[index][e.target.name] = e.target.value;
@@ -133,7 +133,7 @@ const Education = ({ formData, setFormData, nextStep, prevStep }) => {
           Back
         </button>
         <button 
-          onClick={nextStep} 
+          onClick={() => { nextStep(); handleSubmit(); }} 
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
         >
           Next

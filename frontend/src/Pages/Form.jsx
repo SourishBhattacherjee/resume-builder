@@ -96,8 +96,6 @@ const Form = () => {
       
       if (actualResumeId) {
         const response = await axios.post(`http://localhost:7000/update/${actualResumeId}`, formData);
-        console.log('Update response:', response.data);
-        alert('Resume updated successfully!');
       } else {
         const response = await axios.post('http://localhost:7000/resume', formData);
         console.log('Create response:', response.data);
@@ -114,15 +112,15 @@ const Form = () => {
   const renderStep = () => {
     switch (step) {
       case 0:
-        return <PersonalDetails formData={formData} setFormData={setFormData} nextStep={nextStep} />;
+        return <PersonalDetails formData={formData} setFormData={setFormData} nextStep={nextStep} handleSubmit={handleSubmit} />;
       case 1:
-        return <Education formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} />;
+        return <Education formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} handleSubmit={handleSubmit} />;
       case 2:
-        return <Experience formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} />;
+        return <Experience formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} handleSubmit={handleSubmit} />;
       case 3:
-        return <Projects formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} />;
+        return <Projects formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} handleSubmit={handleSubmit} />;
       case 4:
-        return <Certifications formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} />;
+        return <Certifications formData={formData} setFormData={setFormData} nextStep={nextStep} prevStep={prevStep} handleSubmit={handleSubmit} />;
       case 5:
         return <Additional 
           formData={formData} 

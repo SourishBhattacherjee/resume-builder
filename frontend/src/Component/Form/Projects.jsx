@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Projects = ({ formData = { projects: [] }, setFormData, nextStep, prevStep }) => {
+const Projects = ({ formData = { projects: [] }, setFormData, nextStep, prevStep, handleSubmit }) => {
   // Ensure formData.projects exists or default to empty array
   const projects = formData.projects || [];
 
@@ -113,7 +113,7 @@ const Projects = ({ formData = { projects: [] }, setFormData, nextStep, prevStep
           Back
         </button>
         <button 
-          onClick={nextStep} 
+          onClick={() => { nextStep(); handleSubmit(); }} 
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
         >
           Next

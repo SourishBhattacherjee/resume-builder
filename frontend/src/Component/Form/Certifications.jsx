@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Certifications = ({ formData, setFormData, nextStep, prevStep }) => {
+const Certifications = ({ formData, setFormData, nextStep, prevStep,handleSubmit}) => {
   const handleChange = (index, e) => {
     const updated = [...formData.certifications];
     updated[index][e.target.name] = e.target.value;
@@ -34,7 +34,7 @@ const Certifications = ({ formData, setFormData, nextStep, prevStep }) => {
       <button onClick={addCert} className="mb-4 bg-green-600 text-white px-4 py-2 rounded-lg">Add Certification</button>
       <div className="flex justify-between">
         <button onClick={prevStep} className="bg-gray-400 text-white px-4 py-2 rounded-lg">Back</button>
-        <button onClick={nextStep} className="bg-blue-600 text-white px-4 py-2 rounded-lg">Next</button>
+        <button onClick={() => { nextStep(); handleSubmit(); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg">Next</button>
       </div>
     </div>
   );

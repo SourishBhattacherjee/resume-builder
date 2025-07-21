@@ -170,10 +170,6 @@ const downloadResume = async (req, res) => {
       return res.status(500).json({ error: 'PDF generation failed' });
     }
 
-    // Delete the .tex file after successful PDF generation
-    fs.unlinkSync(texPath); // <-- Cleanup here
-    console.log(`Deleted .tex file: ${texPath}`);
-
     // Send the PDF file
     res.download(pdfPath, pdfFilename, (err) => {
       if (err) {
