@@ -104,7 +104,7 @@ const CreateResume = () => {
                 Select Template
               </label>
               <div className="grid gap-2">
-                {['template1', 'template2', 'template3'].map((template) => (
+                {['template1', 'template2', 'template3','template4'].map((template) => (
                   <div key={template} className="flex items-center">
                     <input
                       type="radio"

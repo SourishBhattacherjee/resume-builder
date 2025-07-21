@@ -79,7 +79,7 @@ const resumeSchema = new mongoose.Schema({
   },
   template:{
     type: String,
-    enum:['template1', 'template2', 'template3'],
+    enum:['template1', 'template2', 'template3','template4'],
     default: 'template1'
   },
   personalDetails: [personalSchema],
