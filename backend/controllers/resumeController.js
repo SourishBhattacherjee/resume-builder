@@ -143,21 +143,12 @@ const deleteResume = async (req, res) => {
     const extensions = [
       '.tex', 
       '.pdf',
-      '.aux',
-      '.log', 
-      '.out',
-      '.toc',
-      '.lof',
-      '.lot',
-      '.bbl',
-      '.blg',
-      '.synctex.gz',
-      '.png' // Preview image
+      '.png' 
     ];
     
     // Delete each file
     extensions.forEach(ext => {
-      const filePath = path.join(outputDir, `${baseName}${ext}`);
+      const filePath = path.join(outputDir, `resume_${baseName}${ext}`);
       if (fs.existsSync(filePath)) {
         try {
           fs.unlinkSync(filePath);
