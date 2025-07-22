@@ -37,7 +37,12 @@ const formatProjects = prArr => prArr.map(p =>
   '\\end{itemize}\n'
 ).join('\n');
 
-const formatList = arr => arr.map(a => escapeLatex(a)).join(' $\\bullet$ ');
+const formatList = (arr, templateType) => {
+  const escapedArr = arr.map(a => escapeLatex(a));
+  return templateType === 'template2' 
+    ? escapedArr.join(' \\\\ ')  // New lines for template2
+    : escapedArr.join(' $\\bullet$ ');  // Bullet points for others
+};
 
 function generateResumeLatex(resumeData) {
   const tmpl = resumeData.template || 'template1';
@@ -55,10 +60,12 @@ function generateResumeLatex(resumeData) {
     education: formatEducation(resumeData.education || []),
     experience: formatExperience(resumeData.experience || []),
     projects: formatProjects(resumeData.projects || []),
-    skills: formatList(resumeData.skills || []),
-    languages: escapeLatex((resumeData.languages||[]).join(', ')),
-    certifications: escapeLatex((resumeData.certifications||[])
-                                 .map(c=>c.name).join(', '))
+    skills: formatList(resumeData.skills || [], tmpl),
+    languages: formatList(resumeData.languages || [], tmpl),
+    certifications: formatList(
+      (resumeData.certifications || []).map(c => c.name), 
+      tmpl
+    )
   };
 
   Object.entries(tokens).forEach(([key, val]) => {
@@ -67,5 +74,4 @@ function generateResumeLatex(resumeData) {
 
   return content;
 }
-
 module.exports = generateResumeLatex;
