@@ -38,10 +38,15 @@ const formatProjects = prArr => prArr.map(p =>
 ).join('\n');
 
 const formatList = (arr, templateType) => {
-  const escapedArr = arr.map(a => escapeLatex(a));
-  return templateType === 'template2' 
-    ? escapedArr.join(' \\\\ ')  // New lines for template2
-    : escapedArr.join(' $\\bullet$ ');  // Bullet points for others
+  const escapedArr = arr
+    .filter(item => item && item.trim().length > 0) // Remove empty items
+    .map(a => escapeLatex(a.trim())); // Trim whitespace
+
+  if (templateType === 'template2' || templateType === 'template4') {
+    // Return ready-to-use LaTeX itemize content
+    return escapedArr.join(' \\\\\n\\item ');
+  }
+  return escapedArr.join(' $\\bullet$ ');
 };
 
 function generateResumeLatex(resumeData) {
