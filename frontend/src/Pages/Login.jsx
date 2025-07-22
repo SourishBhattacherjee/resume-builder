@@ -10,7 +10,7 @@ import ResetPassword from '../Component/ResetPassoword';
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
-  const [step, setStep] = useState('login'); // 'login', 'getOTP', 'verifyOTP', 'resetPassword'
+  const [step, setStep] = useState('login');
   const [userEmail, setUserEmail] = useState('');
   const navigate = useNavigate();
 
@@ -27,7 +27,6 @@ const Login = () => {
       setTimeout(() => navigate('/dashboard'), 2000);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Login failed');
-      setError(err.response?.data?.message || 'Login failed');
     }
   };
 
