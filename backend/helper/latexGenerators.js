@@ -38,15 +38,20 @@ const formatProjects = prArr => prArr.map(p =>
 ).join('\n');
 
 const formatList = (arr, templateType) => {
-  const escapedArr = arr
-    .filter(item => item && item.trim().length > 0) // Remove empty items
-    .map(a => escapeLatex(a.trim())); // Trim whitespace
-
-  if (templateType === 'template2' || templateType === 'template4') {
-    // Return ready-to-use LaTeX itemize content
+  const escapedArr = arr.map(a => escapeLatex(a));
+  
+  if (templateType === 'template2') {
+    // Vertical list with line breaks for template2
+    return escapedArr.join(' \\\\ ');
+  } 
+  else if (templateType === 'template4') {
+    // Vertical bulleted list for template4
     return escapedArr.join(' \\\\\n\\item ');
   }
-  return escapedArr.join(' $\\bullet$ ');
+  else {
+    // Horizontal bullet points for all other templates
+    return escapedArr.join(' $\\bullet$ ');
+  }
 };
 
 function generateResumeLatex(resumeData) {

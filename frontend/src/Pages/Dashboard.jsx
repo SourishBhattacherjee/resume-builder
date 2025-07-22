@@ -69,7 +69,6 @@ const Dashboard = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       setResumes(resumes.filter((r) => r._id !== resumeId));
-      toast.success('Resume deleted successfully');
     } catch (err) {
       toast.error('Failed to delete resume');
     }
@@ -109,8 +108,6 @@ const Dashboard = () => {
         window.URL.revokeObjectURL(url);
         document.body.removeChild(link);
       }, 100);
-
-      toast.success('Download started successfully');
     } catch (error) {
       console.error('Download error:', error);
       let errorMessage = 'Download failed';
