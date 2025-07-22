@@ -59,29 +59,37 @@ const updateResume = async (req, res) => {
     // Compile to PDF
     const pdfPath = texPath.replace('.tex', '.pdf');
     const outputDir = path.dirname(texPath);
+    const baseName = path.basename(texPath, '.tex');
     
     try {
       // 1. Compile LaTeX to PDF
-      execSync(`pdflatex -output-directory=${outputDir} ${texPath}`, {
+      execSync(`pdflatex -interaction=nonstopmode -output-directory=${outputDir} ${texPath}`, {
         stdio: 'ignore'
       });
       
       // 2. Convert PDF to PNG using Ghostscript
-      const pngPath = pdfPath.replace('.pdf', '.png');
+      const pngPath = path.join(outputDir, `${baseName}.png`);
       execSync(`gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r150 -sOutputFile=${pngPath} ${pdfPath}`);
       
       // 3. Read the PNG file and convert to base64
       const imageBuffer = fs.readFileSync(pngPath);
       const base64Image = imageBuffer.toString('base64');
       
-      // 4. Cleanup auxiliary files
-      ['aux', 'log', 'out'].forEach(ext => {
-        try {
-          fs.unlinkSync(texPath.replace('.tex', `.${ext}`));
-        } catch (e) {}
+      // 4. Cleanup ALL auxiliary files
+      const auxFiles = [
+        '.aux', '.log', '.out', 
+        '.toc', '.lof', '.lot',
+        '.bbl', '.blg', '.synctex.gz'
+      ];
+      
+      auxFiles.forEach(ext => {
+        const filePath = path.join(outputDir, `${baseName}${ext}`);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
       });
 
-      // 5. Update the resume with the preview image in the database
+      // 5. Update the resume in database
       const resumeWithPreview = await Resume.findByIdAndUpdate(
         id,
         { 
@@ -119,10 +127,51 @@ const deleteResume = async (req, res) => {
   try {
     connectDB();
     const { id } = req.params;
-    const deletedResume = await Resume.findByIdAndDelete(id);
-    if (!deletedResume) return res.status(404).json({ error: 'Resume not found' });
+    
+    // First get the resume to access file paths
+    const resume = await Resume.findById(id);
+    if (!resume) return res.status(404).json({ error: 'Resume not found' });
 
-    res.json({ success: true, message: 'Resume deleted successfully' });
+    // Delete from database
+    const deletedResume = await Resume.findByIdAndDelete(id);
+    
+    // File cleanup
+    const outputDir = path.join(__dirname, '..', 'latex_files'); // Adjust path as needed
+    const baseName = id; // Assuming files are named by ID
+    
+    // List of all file extensions to delete
+    const extensions = [
+      '.tex', 
+      '.pdf',
+      '.aux',
+      '.log', 
+      '.out',
+      '.toc',
+      '.lof',
+      '.lot',
+      '.bbl',
+      '.blg',
+      '.synctex.gz',
+      '.png' // Preview image
+    ];
+    
+    // Delete each file
+    extensions.forEach(ext => {
+      const filePath = path.join(outputDir, `${baseName}${ext}`);
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (err) {
+          console.error(`Error deleting ${filePath}:`, err.message);
+        }
+      }
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'Resume and all associated files deleted successfully' 
+    });
+    
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
