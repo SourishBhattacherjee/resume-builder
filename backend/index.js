@@ -8,7 +8,7 @@ const app = express();
 const cors = require('cors')
 const userRoute = require('./routes/userRoute')
 const connectDB = require('./utils/db');
-const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { createClient } = require('@supabase/supabase-js');
 
 connectDB();
 app.use(cors({
@@ -64,25 +64,22 @@ app.post('/', async(req,res)=>{
 app.use('/',userRoute)
 app.use('/',require('./routes/resumeRoute'));
 // Initialize S3 client
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-});
 
-// Upload file to S3
+
+
+// Initialize Supabase client
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
+// Upload file to Supabase Storage
 async function uploadFile(filePath, key) {
   try {
     const fileContent = fs.readFileSync(filePath);
-    const params = {
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: key, // e.g., 'folder/filename.ext'
-      Body: fileContent,
-    };
-    const command = new PutObjectCommand(params);
-    const data = await s3Client.send(command);
+    const { data, error } = await supabase.storage
+      .from(process.env.SUPABASE_BUCKET)
+      .upload(key, fileContent, {
+        contentType: 'application/octet-stream', // Adjust based on file type
+      });
+    if (error) throw error;
     console.log(`File uploaded successfully: ${key}`, data);
     return data;
   } catch (err) {
@@ -91,17 +88,15 @@ async function uploadFile(filePath, key) {
   }
 }
 
-// Retrieve (download) file from S3
+// Retrieve (download) file from Supabase Storage
 async function downloadFile(key, downloadPath) {
   try {
-    const params = {
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: key,
-    };
-    const command = new GetObjectCommand(params);
-    const data = await s3Client.send(command);
-    const body = await data.Body.transformToByteArray();
-    fs.writeFileSync(downloadPath, Buffer.from(body));
+    const { data, error } = await supabase.storage
+      .from(process.env.SUPABASE_BUCKET)
+      .download(key);
+    if (error) throw error;
+    const buffer = Buffer.from(await data.arrayBuffer());
+    fs.writeFileSync(downloadPath, buffer);
     console.log(`File downloaded successfully: ${downloadPath}`);
     return data;
   } catch (err) {
@@ -110,15 +105,13 @@ async function downloadFile(key, downloadPath) {
   }
 }
 
-// Delete file from S3
+// Delete file from Supabase Storage
 async function deleteFile(key) {
   try {
-    const params = {
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: key,
-    };
-    const command = new DeleteObjectCommand(params);
-    const data = await s3Client.send(command);
+    const { data, error } = await supabase.storage
+      .from(process.env.SUPABASE_BUCKET)
+      .remove([key]);
+    if (error) throw error;
     console.log(`File deleted successfully: ${key}`);
     return data;
   } catch (err) {
