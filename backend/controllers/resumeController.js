@@ -1,10 +1,16 @@
 const generateResumeLatex = require('../helper/latexGenerators');
+const { createClient } = require('@supabase/supabase-js');
 const saveLatexToFile = require('../helper/saveLatexToFile');
 const Resume = require('../models/Resume');
 const fs = require('fs');
 const path = require('path');
 const { execSync,exec } = require('child_process');
 const connectDB = require('../utils/db');
+
+const TEMP_DIR = path.join(__dirname, '..', 'temp_files');
+
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
 const createResume = async (req, res) => {
   try {
     const userId = req.params.id;
@@ -52,36 +58,61 @@ const updateResume = async (req, res) => {
 
     // Generate LaTeX content
     const latex = generateResumeLatex(updatedResume);
-    
-    // Save LaTeX file
-    const { filePath: texPath } = saveLatexToFile(latex, id);
-    
+
+    // Ensure temp directory exists
+    if (!fs.existsSync(TEMP_DIR)) {
+      fs.mkdirSync(TEMP_DIR, { recursive: true });
+    }
+
+    // Save LaTeX file locally for compilation
+    const texPath = path.join(TEMP_DIR, `resume_${id}.tex`);
+    fs.writeFileSync(texPath, latex);
+
     // Compile to PDF
-    const pdfPath = texPath.replace('.tex', '.pdf');
-    const outputDir = path.dirname(texPath);
-    const baseName = path.basename(texPath, '.tex');
-    
+    const outputDir = TEMP_DIR;
+    const baseName = `resume_${id}`;
+    const pdfPath = path.join(outputDir, `${baseName}.pdf`);
+
     try {
       // 1. Compile LaTeX to PDF
       execSync(`pdflatex -interaction=nonstopmode -output-directory=${outputDir} ${texPath}`, {
-        stdio: 'ignore'
+        stdio: 'ignore',
       });
-      
+
       // 2. Convert PDF to PNG using Ghostscript
       const pngPath = path.join(outputDir, `${baseName}.png`);
       execSync(`gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r150 -sOutputFile=${pngPath} ${pdfPath}`);
-      
-      // 3. Read the PNG file and convert to base64
+
+      // 3. Upload files to Supabase with upsert to overwrite existing files
+      const filesToUpload = [
+        { path: texPath, key: `resumes/${id}/${baseName}.tex`, contentType: 'text/x-tex' },
+        { path: pdfPath, key: `resumes/${id}/${baseName}.pdf`, contentType: 'application/pdf' },
+        { path: pngPath, key: `resumes/${id}/${baseName}.png`, contentType: 'image/png' },
+      ];
+
+      for (const file of filesToUpload) {
+        const fileContent = fs.readFileSync(file.path);
+        const { error } = await supabase.storage
+          .from(process.env.SUPABASE_BUCKET)
+          .upload(file.key, fileContent, { 
+            contentType: file.contentType,
+            upsert: true // Overwrite if file exists
+          });
+        if (error) {
+          console.error(`Error uploading ${file.key}:`, error);
+          throw error;
+        }
+      }
+
+      // 4. Read PNG for base64
       const imageBuffer = fs.readFileSync(pngPath);
       const base64Image = imageBuffer.toString('base64');
-      
-      // 4. Cleanup ALL auxiliary files
+
+      // 5. Cleanup local files (including auxiliary files)
       const auxFiles = [
-        '.aux', '.log', '.out', 
-        '.toc', '.lof', '.lot',
-        '.bbl', '.blg', '.synctex.gz'
+        '.aux', '.log', '.out', '.toc', '.lof', '.lot', '.bbl', '.blg', '.synctex.gz',
+        '.tex', '.pdf', '.png',
       ];
-      
       auxFiles.forEach(ext => {
         const filePath = path.join(outputDir, `${baseName}${ext}`);
         if (fs.existsSync(filePath)) {
@@ -89,32 +120,32 @@ const updateResume = async (req, res) => {
         }
       });
 
-      // 5. Update the resume in database
+      // 6. Update resume in database
       const resumeWithPreview = await Resume.findByIdAndUpdate(
         id,
-        { 
+        {
           ...req.body,
           previewImage: `data:image/png;base64,${base64Image}`,
-          pdfPath: path.basename(pdfPath),
-          latexPath: path.basename(texPath)
+          pdfPath: `resumes/${id}/${baseName}.pdf`,
+          latexPath: `resumes/${id}/${baseName}.tex`,
         },
-        { new: true }
+        { new: true },
       );
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         resume: resumeWithPreview,
-        latexFile: path.basename(texPath),
-        pdfFile: path.basename(pdfPath),
-        previewImage: `data:image/png;base64,${base64Image}`
+        latexFile: `${baseName}.tex`,
+        pdfFile: `${baseName}.pdf`,
+        previewImage: `data:image/png;base64,${base64Image}`,
       });
-      
+
     } catch (compileError) {
       console.error('Processing failed:', compileError);
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'PDF generation failed',
         details: compileError.message,
-        latexSaved: path.basename(texPath)
+        latexSaved: `${baseName}.tex`,
       });
     }
 
@@ -127,42 +158,32 @@ const deleteResume = async (req, res) => {
   try {
     connectDB();
     const { id } = req.params;
-    
-    // First get the resume to access file paths
+
+    // Find resume to get file paths
     const resume = await Resume.findById(id);
     if (!resume) return res.status(404).json({ error: 'Resume not found' });
 
     // Delete from database
-    const deletedResume = await Resume.findByIdAndDelete(id);
+    await Resume.findByIdAndDelete(id);
+
+    // Delete files from Supabase
+    const extensions = ['.tex', '.pdf', '.png'];
+    const fileKeys = extensions.map(ext => `resumes/${id}/resume_${id}${ext}`);
     
-    // File cleanup
-    const outputDir = path.join(__dirname, '..', 'latex_files'); // Adjust path as needed
-    const baseName = id; // Assuming files are named by ID
+    const { error } = await supabase.storage
+      .from(process.env.SUPABASE_BUCKET)
+      .remove(fileKeys);
     
-    // List of all file extensions to delete
-    const extensions = [
-      '.tex', 
-      '.pdf',
-      '.png' 
-    ];
-    
-    // Delete each file
-    extensions.forEach(ext => {
-      const filePath = path.join(outputDir, `resume_${baseName}${ext}`);
-      if (fs.existsSync(filePath)) {
-        try {
-          fs.unlinkSync(filePath);
-        } catch (err) {
-          console.error(`Error deleting ${filePath}:`, err.message);
-        }
-      }
+    if (error) {
+      console.error('Error deleting files from Supabase:', error);
+      throw error;
+    }
+
+    res.json({
+      success: true,
+      message: 'Resume and all associated files deleted successfully',
     });
 
-    res.json({ 
-      success: true, 
-      message: 'Resume and all associated files deleted successfully' 
-    });
-    
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
@@ -200,54 +221,34 @@ const getResume = async (req, res) => {
 
 const downloadResume = async (req, res) => {
   const { id } = req.params;
-  const outputDir = path.join(__dirname, '..', 'latex_files');
 
   try {
-    // Check if PDF directory exists
     connectDB();
-    if (!fs.existsSync(outputDir)) {
-      return res.status(404).json({ error: 'No resumes generated yet' });
-    }
-    const existingTexFiles = fs.readdirSync(outputDir).filter(file => 
-      file.startsWith(`resume_${id}`) && file.endsWith('.tex')
-    );
-    
-    existingTexFiles.forEach(texFile => {
-      try {
-        fs.unlinkSync(path.join(outputDir, texFile));
-      } catch (err) {
-        console.error(`Error deleting .tex file ${texFile}:`, err);
-      }
-    });
 
-    // Find the PDF file for this resume ID
-    const pdfFiles = fs.readdirSync(outputDir);
-    const pdfFilename = pdfFiles.find(file => 
-      file.startsWith(`resume_${id}`) && file.endsWith('.pdf')
-    );
+    // Find the resume to verify it exists
+    const resume = await Resume.findById(id);
+    if (!resume) return res.status(404).json({ error: 'Resume not found' });
 
-    if (!pdfFilename) {
+    // Download PDF from Supabase
+    const pdfKey = `resumes/${id}/resume_${id}.pdf`;
+    const { data, error } = await supabase.storage
+      .from(process.env.SUPABASE_BUCKET)
+      .download(pdfKey);
+
+    if (error) {
+      console.error('Error downloading PDF:', error);
       return res.status(404).json({ error: 'Resume PDF not found' });
     }
 
-    const pdfPath = path.join(outputDir, pdfFilename);
+    // Convert to buffer
+    const buffer = Buffer.from(await data.arrayBuffer());
 
-    // Set proper headers
+    // Set headers
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${pdfFilename}"`);
+    res.setHeader('Content-Disposition', `attachment; filename="resume_${id}.pdf"`);
 
-    // Create read stream
-    const fileStream = fs.createReadStream(pdfPath);
-    
-    fileStream.on('error', (err) => {
-      console.error('File stream error:', err);
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'Error streaming PDF file' });
-      }
-    });
-
-    // Pipe the file to the response
-    fileStream.pipe(res);
+    // Send the file
+    res.send(buffer);
 
   } catch (error) {
     console.error('Error:', error);
