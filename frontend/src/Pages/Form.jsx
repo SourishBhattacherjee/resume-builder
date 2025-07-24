@@ -8,7 +8,16 @@ import Experience from '../Component/Form/Experience';
 import Projects from '../Component/Form/Projects';
 import Certifications from '../Component/Form/Certifications';
 import Additional from '../Component/Form/Additional';
-import ResumePreview from '../Component/ResumePreview'; // Import the preview component
+import ResumePreview from '../Component/ResumePreview';
+
+// Debounce utility to delay function execution
+const debounce = (func, delay) => {
+  let timeoutId;
+  return (...args) => {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  };
+};
 
 const Form = () => {
   const { resume_id, id } = useParams();
@@ -27,8 +36,8 @@ const Form = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [preview, setPreview] = useState(null); // State for storing preview image
-  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false); // Loading state for preview
+  const [preview, setPreview] = useState(null);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
 
   useEffect(() => {
     const fetchResume = async () => {
@@ -46,7 +55,6 @@ const Form = () => {
             languages: response.data.languages || [],
           });
           
-          // If there's a preview image in the response, set it
           if (response.data.previewImage) {
             setPreview(response.data.previewImage);
           }
@@ -61,7 +69,15 @@ const Form = () => {
     fetchResume();
   }, [actualResumeId]);
 
-  const nextStep = () => setStep((prev) => prev + 1);
+  // Debounced nextStep with 3-second buffer
+  const debouncedNextStep = debounce(() => {
+    setStep((prev) => prev + 1);
+  }, 3000); // 3-second buffer
+
+  const nextStep = () => {
+    debouncedNextStep();
+  };
+
   const prevStep = () => setStep((prev) => prev - 1);
 
   const generatePreview = async () => {
@@ -78,22 +94,21 @@ const Form = () => {
   };
 
   const handleSubmit = async () => {
-  try {
-    let response;
-    if (actualResumeId) {
-      response = await axios.post(`/update/${actualResumeId}`, formData);
-      // The preview image is now included in the response
-      setPreview(response.data.previewImage);
-    } else {
-      response = await axios.post('/resume', formData);
-      navigate(`/form/${response.data._id}`);
+    try {
+      let response;
+      if (actualResumeId) {
+        response = await axios.post(`/update/${actualResumeId}`, formData);
+        setPreview(response.data.previewImage);
+      } else {
+        response = await axios.post('/resume', formData);
+        navigate(`/form/${response.data._id}`);
+      }
+    } catch (err) {
+      console.error('Submit error:', err);
+      setError(`Submission failed: ${err.message}`);
+      alert('Failed to save resume. Please try again.');
     }
-  } catch (err) {
-    console.error('Submit error:', err);
-    setError(`Submission failed: ${err.message}`);
-    alert('Failed to save resume. Please try again.');
-  }
-};
+  };
 
   const renderStep = () => {
     switch (step) {
