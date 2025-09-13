@@ -3,6 +3,7 @@ const Otp = require('../models/Otp')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken');
 const {sendOTPEmail}  = require('../helper/mail')
+const redisClient = require('../utils/redis');
 
 const registerUser = async (req,res) => {
   try {
@@ -81,78 +82,79 @@ function generateRandomSixDigitNumber() {
   return Math.floor(100000 + Math.random() * 900000);
 }
 
-const getOTP = async(req, res) => {
+const getOTP = async (req, res) => {
   const { email } = req.body;
-  
+
   try {
-    // First verify user exists
+    // Verify user exists in DB
     const userExists = await User.exists({ email });
     if (!userExists) {
       return res.status(404).json({
         success: false,
-        message: 'No user found with this email address'
+        message: "No user found with this email address",
       });
     }
+
     const OTP = generateRandomSixDigitNumber();
-    const expires = new Date();
-    expires.setSeconds(expires.getSeconds() + 120); // 2 minutes expiry
-    await sendOTPEmail(email,OTP);
-    await Otp.findOneAndUpdate(
-      { email: email },
-      { 
-        email: email,
-        otp: OTP,
-        expires: expires
-      },
-      { upsert: true, new: true }
-    );
+    // Convert to string for bcrypt
+    const hashedOTP = await bcrypt.hash(OTP.toString(), 10);
+
+    await redisClient.set(`otp:${email}`, hashedOTP, { EX: 120 });
+
+    // Send OTP to email (ensure sendOTPEmail can handle string)
+    await sendOTPEmail(email, OTP.toString());
+
     res.status(200).json({
       success: true,
-      message: 'OTP has been sent to registered email',
-      expiresAt: expires 
+      message: "OTP has been sent to registered email",
+      expiresIn: "120 seconds",
     });
-
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Error processing OTP request',
-      error: error.message
+      message: "Error processing OTP request",
+      error: error.message,
     });
   }
-}
-const verifyOTP = async(req, res) => {
-  const { email, otp } = req.body;
-  
-  try {
-    const record = await Otp.findOne({ email, otp });
-    if (!record) {
-      const existsForEmail = await Otp.exists({ email });
-      return res.status(400).json({
-        message: existsForEmail ? 'Invalid OTP' : 'No OTP requested for this email',
-        success: false
-      });
-    }
-    if (record.expires < new Date()) {
-      await Otp.deleteOne({ _id: record._id });
-      return res.status(400).json({ 
-        message: 'OTP has expired',
-        success: false 
-      });
-    }
-    await Otp.deleteOne({ _id: record._id });
-    res.json({ 
-      success: true,
-      message: 'OTP verified successfully' 
-    });
+};
 
+const verifyOTP = async (req, res) => {
+  const { email, otp } = req.body;
+
+  try {
+    const storedOTP = await redisClient.get(`otp:${email}`);
+
+    if (!storedOTP) {
+      return res.status(400).json({
+        success: false,
+        message: "No OTP found or OTP expired",
+      });
+    }
+
+    // Convert input OTP to string for comparison
+    const isMatch = await bcrypt.compare(otp.toString(), storedOTP);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    // OTP verified → remove it
+    await redisClient.del(`otp:${email}`);
+
+    res.json({
+      success: true,
+      message: "OTP verified successfully",
+    });
   } catch (e) {
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Server error during verification',
-      error: e.message 
+      message: "Server error during verification",
+      error: e.message,
     });
   }
-}
+};
 const resetPassword = async(req, res) => {
   const { email, password } = req.body;
   

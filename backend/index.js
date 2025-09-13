@@ -8,6 +8,8 @@ const app = express();
 const cors = require('cors')
 const userRoute = require('./routes/userRoute')
 const connectDB = require('./utils/db');
+const redisClient = require('./utils/redis');
+require('dotenv').config();
 connectDB();
 app.use(cors({
   origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
