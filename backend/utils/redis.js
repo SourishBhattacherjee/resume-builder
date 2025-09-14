@@ -1,7 +1,8 @@
 const { createClient } = require('redis');
+env = require('dotenv').config();
 
 const redisClient = createClient({
-  password: 'Sourishbhatt61',
+  password: process.env.REDIS_PASSWORD,
   socket: {
     host: 'localhost',
     port: 6379
@@ -15,9 +16,9 @@ redisClient.on('ready', () => console.log('Redis Ready!'));
 (async () => {
   try {
     await redisClient.connect();
-    console.log('✅ Redis connected with password');
+    console.log('Redis connected with password');
   } catch (err) {
-    console.error('❌ Connection failed:', err.message);
+    console.error('Connection failed:', err.message);
   }
 })();
 
