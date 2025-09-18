@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 from motor.motor_asyncio import AsyncIOMotorClient
 
 # Prefer explicit env var, fall back to common names
-MONGO_URI = os.getenv("MONGO_URI") or os.getenv("MONGODB_URI") or "mongodb://localhost:27017"
+MONGO_URI = os.getenv("MONGO_URI")
 MONGO_DB_NAME = os.getenv("MONGO_DB_NAME") or os.getenv("MONGO_DB")
 
 # If no DB name provided, try to parse it from the URI path
