@@ -246,6 +246,12 @@ const Form = () => {
             <ul className="list-disc pl-5 space-y-2 text-sm">
               {aiSuggestions.map((s, idx) => (
                 <li key={idx} className="text-gray-700">{s}</li>
+
+
+
+
+
+                
               ))}
             </ul>
           )}
