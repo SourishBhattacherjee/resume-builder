@@ -54,7 +54,7 @@ const Home = () => {
             {[1, 2, 3, 4].map((template) => (
               <div key={template} className="bg-white rounded-xl shadow-lg overflow-hidden transform hover:-translate-y-2 transition-transform duration-300 group">
                 <img 
-                  src={`/src/assets/template${template}.jpg`} 
+                  src={'/src/assets/template' + template + '.png'} 
                   alt={`Template ${template}`}
                   className="w-full h-80 object-cover object-top group-hover:opacity-90 transition-opacity"
                 />
