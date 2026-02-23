@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const app = express();
 const cors = require('cors')
+const http = require('http');
 const userRoute = require('./routes/userRoute')
 const connectDB = require('./utils/db');
 const redisClient = require('./utils/redis');
@@ -18,6 +19,43 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use(express.static('public'));
 app.use(express.json());
+
+// Proxy route: forward POST /ai/recommend -> http://localhost:9000/recommend
+app.post('/ai/recommend', (req, res) => {
+  const data = JSON.stringify(req.body || {});
+  const options = {
+    hostname: 'localhost',
+    port: 9000,
+    path: '/recommend',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(data)
+    }
+  };
+
+  const proxyReq = http.request(options, (proxyRes) => {
+    let body = '';
+    proxyRes.setEncoding('utf8');
+    proxyRes.on('data', (chunk) => { body += chunk; });
+    proxyRes.on('end', () => {
+      // Forward status and headers
+      res.status(proxyRes.statusCode || 200);
+      Object.entries(proxyRes.headers || {}).forEach(([k,v]) => {
+        try { res.setHeader(k, v); } catch (e) {}
+      });
+      // Send raw body
+      try { res.send(JSON.parse(body)); } catch (e) { res.send(body); }
+    });
+  });
+
+  proxyReq.on('error', (err) => {
+    res.status(502).json({ error: 'AI helper unreachable', details: err.message });
+  });
+
+  proxyReq.write(data);
+  proxyReq.end();
+});
 
 // Endpoint to process LaTeX
 /*app.post('/generate-resume', async (req, res) => {

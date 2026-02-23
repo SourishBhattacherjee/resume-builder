@@ -21,3 +21,7 @@ db = client[MONGO_DB_NAME]
 
 def get_db():
     return db
+
+
+
+

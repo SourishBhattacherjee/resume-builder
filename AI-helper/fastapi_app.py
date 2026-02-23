@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import os
 from typing import List, Optional
@@ -11,6 +12,19 @@ except Exception:
     OPENAI_AVAILABLE = False
 
 app = FastAPI(title="Resume AI Helper")
+
+# CORS: allow frontend origin (adjust or set CORS_ORIGINS env var as needed)
+origins = os.getenv('CORS_ORIGINS', 'http://127.0.0.1:5173')
+if isinstance(origins, str):
+    origins = [o.strip() for o in origins.split(',') if o.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class ResumeIn(BaseModel):
     full_name: Optional[str]
