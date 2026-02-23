@@ -10,6 +10,7 @@ const http = require('http');
 const userRoute = require('./routes/userRoute')
 const connectDB = require('./utils/db');
 const redisClient = require('./utils/redis');
+const Resume = require('./models/Resume');
 require('dotenv').config();
 connectDB();
 app.use(cors({
@@ -21,8 +22,21 @@ app.use(express.static('public'));
 app.use(express.json());
 
 // Proxy route: forward POST /ai/recommend -> http://localhost:9000/recommend
-app.post('/ai/recommend', (req, res) => {
-  const data = JSON.stringify(req.body || {});
+app.post('/ai/recommend', async (req, res) => {
+  // If client supplied an `id`, fetch the resume from MongoDB and forward it
+  let payloadObj = req.body || {};
+  try {
+    if (payloadObj.id) {
+      const resumeDoc = await Resume.findById(payloadObj.id).lean();
+      if (!resumeDoc) return res.status(404).json({ error: 'Resume not found' });
+      // Use the resume document as the payload to send to AI helper
+      payloadObj = resumeDoc;
+    }
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to load resume', details: err.message });
+  }
+
+  const data = JSON.stringify(payloadObj || {});
   const options = {
     hostname: 'localhost',
     port: 9000,
