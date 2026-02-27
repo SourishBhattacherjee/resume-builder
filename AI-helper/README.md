@@ -1,17 +1,31 @@
 # AI Helper (Resume Recommendations)
 
-This small FastAPI service provides quick AI-flavored recommendations for improving resumes.
+Small FastAPI service that provides resume recommendations (rule-based fallback or OpenAI-backed when API key is set).
 
-Endpoints
-- POST /recommend
-  - Request JSON: { "full_name": "...", "email": "...", "text": "<resume text>" }
-  - Response JSON: { "suggestions": ["...", "..."] }
+## Endpoints
 
-How it works
-- If `OPENAI_API_KEY` is set in the environment and the `openai` Python package is installed, the service will call OpenAI to generate recommendations.
-- Otherwise it uses a lightweight rule-based fallback.
+- POST `/recommend`
+  - Description: Analyze a resume payload and return up to 5 concise recommendations.
+  - Request JSON: any of the `ResumeIn` shape (see `fastapi_app.py`) — simple payload example:
+    ```json
+    {
+      "name": "Jane Doe",
+      "summary": "Backend engineer...",
+      "skills": ["Node.js", "MongoDB"],
+      "experience": [{ "companyName": "ACME", "responsibilities": ["Built X"] }]
+    }
+    ```
+  - Response JSON: `{ "suggestions": ["...", "..."] }`
 
-Run locally
+- POST `/recommend/{resume_id}`
+  - Description: Fetch a resume from the AI helper's MongoDB by id and return recommendations for that resume.
+  - Path param: `resume_id` (Mongo _id or string id)
+
+- GET `/health`
+  - Description: Health check endpoint. Returns basic DB status and `resumesCount`.
+
+## Run locally
+
 1. Create a virtualenv and install dependencies:
 
 ```bash
@@ -20,17 +34,38 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2. Set `OPENAI_API_KEY` in your environment if you want the OpenAI-backed recommendations.
+2. Set environment variables (example):
 
-3. Start the app with Uvicorn:
+```bash
+export MONGO_URI="mongodb://localhost:27017"
+export MONGO_DB_NAME="resume_db"
+export OPENAI_API_KEY="sk_your_key_here"  # optional
+```
+
+3. Start the app:
 
 ```bash
 uvicorn fastapi_app:app --reload --port 9000
 ```
 
-Try it
-- POST to `http://localhost:9000/recommend` with a JSON body.
+## Examples
 
-Notes
-- The project includes a fallback analyzer so you can run recommendations without API keys.
-- This is intentionally small and designed to be extended with richer parsing and more fine-grained suggestions.
+- Simple recommend (curl):
+
+```bash
+curl -X POST http://localhost:9000/recommend \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Jane","summary":"Experienced dev","skills":["Python"]}'
+```
+
+- Recommend for saved resume id:
+
+```bash
+curl -X POST http://localhost:9000/recommend/605c3b2f9e1d8b2f4a0d7a1f
+```
+
+## Notes
+
+- If `OPENAI_API_KEY` is available and the `openai` package is installed, the service will attempt to use OpenAI; otherwise it falls back to a built-in analyzer.
+- CORS origins default to `http://127.0.0.1:5173` (configurable via `CORS_ORIGINS`).
+
