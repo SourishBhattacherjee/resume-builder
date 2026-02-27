@@ -10,12 +10,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Optional OpenAI
-try:
-    from openai import OpenAI
-    OPENAI_AVAILABLE = True
-except Exception:
-    OPENAI_AVAILABLE = False
+
 
 app = FastAPI(title="Resume AI Helper")
 
@@ -229,28 +224,38 @@ async def recommend(resume: ResumeIn):
 
     api_key = os.getenv("OPENROUTER_API_KEY")
 
-    if api_key and OPENAI_AVAILABLE:
+    if api_key:
+        import urllib.request
+        import json
         try:
-            client = OpenAI(
-                base_url="https://openrouter.ai/api/v1",
-                api_key=api_key,
-            )
-
             prompt = (
                 "You are a resume reviewer. Give 5 concise, actionable suggestions.\n\n"
                 f"{resume_text}\n\nReturn JSON array only."
             )
 
-            resp = client.chat.completions.create(
-                model="openai/gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=300,
-                temperature=0.6,
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            data = {
+                "model": "openai/gpt-4o-mini", # Keep this as model name
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 300,
+                "temperature": 0.6
+            }
+
+            req = urllib.request.Request(
+                "https://openrouter.ai/api/v1/chat/completions",
+                data=json.dumps(data).encode("utf-8"),
+                headers=headers,
+                method="POST"
             )
 
-            content = resp.choices[0].message.content.strip()
+            with urllib.request.urlopen(req) as response:
+                resp_body = response.read().decode("utf-8")
+                resp_json = json.loads(resp_body)
+                content = resp_json["choices"][0]["message"]["content"].strip()
 
-            import json
             try:
                 arr = json.loads(content)
                 if isinstance(arr, list):
@@ -260,7 +265,7 @@ async def recommend(resume: ResumeIn):
                 return {"suggestions": lines[:5]}
 
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"OpenAI failed: {e}")
+            raise HTTPException(status_code=500, detail=f"OpenRouter failed: {e}")
 
     suggestions = run_fallback_analyzer(resume_text, resume)
     return {"suggestions": suggestions}

@@ -43,6 +43,7 @@ const Form = () => {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
   const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [isAiPanelOpen, setIsAiPanelOpen] = useState(false);
 
   useEffect(() => {
     const fetchResume = async () => {
@@ -104,6 +105,7 @@ const Form = () => {
     setAiSuggestions([]);
     try {
       setAiLoading(true);
+      setIsAiPanelOpen(true);
 
       const payload = {
         full_name:
@@ -190,7 +192,8 @@ const Form = () => {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 max-w-6xl mx-auto p-6">
+    <>
+      <div className="flex flex-col lg:flex-row gap-6 max-w-6xl mx-auto p-6">
       {/* Form Section */}
       <div className="lg:w-1/2 bg-white shadow-md rounded-lg p-6">
         <div className="text-xl font-bold mb-6 text-center">Step {step + 1} of 6</div>
@@ -227,41 +230,97 @@ const Form = () => {
 
         <ResumePreview preview={preview} />
 
-        {/* AI Suggestions Panel */}
-        <div className="bg-white shadow rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-sm font-medium">AI Recommendations</div>
-            <div className="text-xs text-gray-500">{aiSuggestions.length ? `${aiSuggestions.length} suggestions` : 'No suggestions yet'}</div>
-          </div>
+      </div>
+    </div>
 
+    {/* AI Suggestions Side Panel */}
+    <div
+      className={`fixed top-0 right-0 h-full w-80 sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+        isAiPanelOpen ? 'translate-x-0' : 'translate-x-full'
+      }`}
+    >
+      {/* Toggle Button */}
+      <button
+        onClick={() => setIsAiPanelOpen(!isAiPanelOpen)}
+        className="absolute top-1/2 -left-10 w-10 h-16 bg-white border border-r-0 border-gray-200 rounded-l-lg shadow-md flex items-center justify-center -translate-y-1/2 hover:bg-gray-50 transition-colors z-50 text-gray-600 focus:outline-none"
+        title="Toggle AI Suggestions"
+      >
+        {isAiPanelOpen ? (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        )}
+      </button>
+
+      <div className="p-5 h-full flex flex-col">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
+          <div className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
+              <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"></path>
+              <path d="M7.13 14h.01"></path>
+              <path d="M16.87 14h.01"></path>
+              <path d="M9.5 18c1.38.6 3.62.6 5 0"></path>
+            </svg>
+            AI Assistant
+          </div>
+          <div className="text-xs font-medium px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+            {aiSuggestions.length ? `${aiSuggestions.length} tips` : 'New'}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
           {aiLoading && (
-            <div className="text-sm text-gray-600">Analyzing resume — this may take a few seconds...</div>
+            <div className="flex flex-col items-center justify-center h-40 text-gray-500 space-y-3">
+              <svg className="animate-spin h-8 w-8 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span className="text-sm font-medium">Analyzing your resume...</span>
+            </div>
           )}
 
           {aiError && (
-            <div className="text-sm text-red-500">Error: {aiError}</div>
+            <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-100">
+              {aiError}
+            </div>
           )}
 
           {!aiLoading && !aiError && aiSuggestions.length > 0 && (
-            <ul className="list-disc pl-5 space-y-2 text-sm">
+            <div className="space-y-4">
               {aiSuggestions.map((s, idx) => (
-                <li key={idx} className="text-gray-700">{s}</li>
-
-
-
-
-
-                
+                <div key={idx} className="bg-green-50 border border-green-100 p-3 rounded-lg flex items-start gap-3 shadow-sm">
+                  <div className="text-green-600 mt-0.5 shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                  </div>
+                  <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    {s}
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
 
           {!aiLoading && !aiError && aiSuggestions.length === 0 && (
-            <div className="text-sm text-gray-500">Click "Recommend changes" to get targeted suggestions from the AI helper.</div>
+            <div className="flex flex-col items-center justify-center h-40 text-gray-400 space-y-3 px-4 text-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="9" y1="9" x2="15" y2="9"></line>
+                <line x1="9" y1="13" x2="15" y2="13"></line>
+                <line x1="9" y1="17" x2="15" y2="17"></line>
+              </svg>
+              <span className="text-sm">Click "Recommend changes" to get smart suggestions for your resume.</span>
+            </div>
           )}
         </div>
       </div>
     </div>
+    </>
   );
 };
 
