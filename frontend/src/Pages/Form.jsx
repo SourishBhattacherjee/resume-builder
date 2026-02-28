@@ -116,20 +116,11 @@ const recommendChanges = async () => {
       locale: formData.locale || 'en',
     };
 
-    let response;
-    try {
-      response = await axios.post('/ai/recommend', payload, {
-        timeout: 30000,
-        responseType: 'text',
-        transformResponse: (data) => data, // prevent axios from auto-parsing
-      });
-    } catch (err) {
-      response = await axios.post('http://localhost:9000/recommend', payload, {
-        timeout: 30000,
-        responseType: 'text',
-        transformResponse: (data) => data,
-      });
-    }
+    const response = await axios.post('/ai/recommend', payload, {
+      timeout: 30000,
+      responseType: 'text',
+      transformResponse: (data) => data, // prevent axios from auto-parsing
+    });
 
     const raw = typeof response.data === 'string'
       ? response.data

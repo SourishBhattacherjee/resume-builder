@@ -37,9 +37,12 @@ app.post('/ai/recommend', async (req, res) => {
   }
 
   const data = JSON.stringify(payloadObj || {});
+  const proxyUrl = process.env.AI_HELPER_URL || 'http://localhost:9000';
+  const urlObj = new URL(proxyUrl);
+
   const options = {
-    hostname: 'localhost',
-    port: 9000,
+    hostname: urlObj.hostname,
+    port: urlObj.port || 9000,
     path: '/recommend',
     method: 'POST',
     headers: {
@@ -55,8 +58,8 @@ app.post('/ai/recommend', async (req, res) => {
     proxyRes.on('end', () => {
       // Forward status and headers
       res.status(proxyRes.statusCode || 200);
-      Object.entries(proxyRes.headers || {}).forEach(([k,v]) => {
-        try { res.setHeader(k, v); } catch (e) {}
+      Object.entries(proxyRes.headers || {}).forEach(([k, v]) => {
+        try { res.setHeader(k, v); } catch (e) { }
       });
       // Send raw body
       try { res.send(JSON.parse(body)); } catch (e) { res.send(body); }
@@ -109,12 +112,12 @@ app.post('/ai/recommend', async (req, res) => {
 app.get('/', (req, res) => {
   res.send('Server is running');
 });
-app.post('/', async(req,res)=>{
+app.post('/', async (req, res) => {
   res.send('server running');
 })
 
-app.use('/',userRoute)
-app.use('/',require('./routes/resumeRoute'));
+app.use('/', userRoute)
+app.use('/', require('./routes/resumeRoute'));
 // Initialize S3 client
 
 

@@ -14,7 +14,7 @@ const sendOTPEmail = async (toEmail, otp) => {
   const mailOptions = {
     from: process.env.EMAIL,
     to: toEmail,
-    subject: 'Your OTP for Visitor Verification',
+    subject: 'Your OTP for Resume Builder Verification',
     html: `<h2>Your OTP is: <span style="color:blue;">${otp}</span></h2>`,
   };
 
