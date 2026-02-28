@@ -214,13 +214,15 @@ def run_fallback_analyzer(resume_text: str, resume: ResumeIn) -> List[str]:
 
 # ---------------- Core Endpoint ----------------
 
-@app.post("/recommend", response_model=Recommendation)
+from fastapi.responses import PlainTextResponse
+
+@app.post("/recommend", response_class=PlainTextResponse)
 async def recommend(resume: ResumeIn):
 
     resume_text = build_structured_text(resume)
 
     if not resume_text.strip():
-        return {"suggestions": ["No resume data found. Please fill your resume first."]}
+        return "No resume data found. Please fill your resume first."
 
     api_key = os.getenv("OPENROUTER_API_KEY")
 
@@ -230,7 +232,7 @@ async def recommend(resume: ResumeIn):
         try:
             prompt = (
                 "You are a resume reviewer. Give 5 concise, actionable suggestions.\n\n"
-                f"{resume_text}\n\nReturn JSON array only."
+                f"{resume_text}\n\nReturn each suggestion on a new line. No JSON."
             )
 
             headers = {
@@ -238,7 +240,7 @@ async def recommend(resume: ResumeIn):
                 "Content-Type": "application/json"
             }
             data = {
-                "model": "openai/gpt-4o-mini", # Keep this as model name
+                "model": "openai/gpt-4o-mini",
                 "messages": [{"role": "user", "content": prompt}],
                 "max_tokens": 300,
                 "temperature": 0.6
@@ -256,20 +258,15 @@ async def recommend(resume: ResumeIn):
                 resp_json = json.loads(resp_body)
                 content = resp_json["choices"][0]["message"]["content"].strip()
 
-            try:
-                arr = json.loads(content)
-                if isinstance(arr, list):
-                    return {"suggestions": arr[:5]}
-            except Exception:
-                lines = [l.strip("- ").strip() for l in content.splitlines() if l.strip()]
-                return {"suggestions": lines[:5]}
+            # ensure clean lines
+            lines = [l.strip("- ").strip() for l in content.splitlines() if l.strip()]
+            return "\n".join(lines[:5])
 
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"OpenRouter failed: {e}")
 
     suggestions = run_fallback_analyzer(resume_text, resume)
-    return {"suggestions": suggestions}
-
+    return "\n".join(suggestions)
 # ---------------- Mongo ID Endpoint ----------------
 
 @app.post("/recommend/{resume_id}", response_model=Recommendation)
