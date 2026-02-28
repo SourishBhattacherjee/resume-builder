@@ -100,47 +100,55 @@ const Form = () => {
   };
 
   // New: call AI service to get recommendations based on resume JSON
-  const recommendChanges = async () => {
-    setAiError(null);
-    setAiSuggestions([]);
+const recommendChanges = async () => {
+  setAiError(null);
+  setAiSuggestions([]);
+  try {
+    setAiLoading(true);
+    setIsAiPanelOpen(true);
+
+    const payload = {
+      full_name:
+        (formData.personalDetails?.[0]?.fullName ||
+          formData.personalDetails?.[0]?.name) ?? '',
+      email: formData.personalDetails?.[0]?.email ?? '',
+      text: JSON.stringify(formData),
+      locale: formData.locale || 'en',
+    };
+
+    let response;
     try {
-      setAiLoading(true);
-      setIsAiPanelOpen(true);
-
-      const payload = {
-        full_name:
-          (formData.personalDetails && formData.personalDetails[0] && (formData.personalDetails[0].fullName || formData.personalDetails[0].name)) || '',
-        email:
-          (formData.personalDetails && formData.personalDetails[0] && formData.personalDetails[0].email) || '',
-        // the AI helper expects a text field; send JSON string of resume so the model can reason over structure
-        text: JSON.stringify(formData),
-        // include locale if available
-        locale: formData.locale || 'en',
-      };
-
-      let response;
-      // Primary: try a proxied internal route. If your backend proxies /ai/recommend to the AI helper service, use that.
-      try {
-        response = await axios.post('/ai/recommend', payload, { timeout: 30000 });
-      } catch (err) {
-        // Fallback: try local dev AI helper (FastAPI) running on port 9000
-        response = await axios.post('http://localhost:9000/recommend', payload, { timeout: 30000 });
-      }
-
-      if (response && response.data && Array.isArray(response.data.suggestions)) {
-        setAiSuggestions(response.data.suggestions);
-      } else {
-        // tolerate different shapes
-        const suggestions = response && response.data && (response.data.suggestions || response.data) || [];
-        setAiSuggestions(Array.isArray(suggestions) ? suggestions : [String(suggestions)]);
-      }
+      response = await axios.post('/ai/recommend', payload, {
+        timeout: 30000,
+        responseType: 'text',
+        transformResponse: (data) => data, // prevent axios from auto-parsing
+      });
     } catch (err) {
-      console.error('AI recommendation error:', err);
-      setAiError(err.response?.data?.message || err.message || 'AI request failed');
-    } finally {
-      setAiLoading(false);
+      response = await axios.post('http://localhost:9000/recommend', payload, {
+        timeout: 30000,
+        responseType: 'text',
+        transformResponse: (data) => data,
+      });
     }
-  };
+
+    const raw = typeof response.data === 'string'
+      ? response.data
+      : JSON.stringify(response.data);
+
+    const suggestions = raw
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .slice(0, 5);
+
+    setAiSuggestions(suggestions.length > 0 ? suggestions : ['No suggestions returned.']);
+  } catch (err) {
+    console.error('AI recommendation error:', err);
+    setAiError(err.response?.data?.message || err.message || 'AI request failed');
+  } finally {
+    setAiLoading(false);
+  }
+};
 
   const handleSubmit = async () => {
     try {
