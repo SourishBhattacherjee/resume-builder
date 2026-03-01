@@ -11,6 +11,7 @@ import Dashboard from './Pages/Dashboard'
 import {ToastContainer} from 'react-toastify'
 import axios from 'axios'
 import CreateResume from './Pages/CreateResume'
+import Profile from './Component/Profile'
 
 axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
 axios.defaults.withCredentials = true;
@@ -26,6 +27,7 @@ function App() {
       <Route path='/dashboard' element = {<Dashboard/>}></Route>
       <Route path='/form/:id' element = {<Form/>}></Route>
       <Route path='/create-resume' element = {<CreateResume/>}></Route>
+      <Route path='/profile' element = {<Profile/>}></Route>
     </Routes>
 
     </>

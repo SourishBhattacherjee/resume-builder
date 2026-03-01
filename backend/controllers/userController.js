@@ -2,35 +2,35 @@ const User = require('../models/User');
 const Otp = require('../models/Otp')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken');
-const {sendOTPEmail}  = require('../helper/mail')
+const { sendOTPEmail } = require('../helper/mail')
 const redisClient = require('../utils/redis');
 
-const registerUser = async (req,res) => {
+const registerUser = async (req, res) => {
   try {
-    const {fullName,email,password} = req.body;
-    const existingUser = await User.findOne({email});
-    if(existingUser){
-      return res.status(400).json({message : 'User alreday exist. Please Login'});
+    const { fullName, email, password } = req.body;
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User alreday exist. Please Login' });
     }
 
     //hash password
-    const hashedPassword = await bcrypt.hash(password,10);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     //create new user;
     const newUser = new User({
       fullName,
       email,
-      password : hashedPassword
+      password: hashedPassword
     })
     await newUser.save();
-    res.status(201).json({message : 'User Registered Succesfully'})
+    res.status(201).json({ message: 'User Registered Succesfully' })
   }
-  catch(err){
+  catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 }
 
-const loginUser = async (req,res) => {
+const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
@@ -39,15 +39,15 @@ const loginUser = async (req,res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
     const token = jwt.sign(
-      { userId: user._id, email: user.email,fullName: user.fullName }, //payload
+      { userId: user._id, email: user.email, fullName: user.fullName }, //payload
       process.env.SECRET_KEY,
-       { expiresIn: '1h' }
+      { expiresIn: '1h' }
     );
 
     res.status(200).json({
       message: 'Login successful',
       token,
-      user: { fullName: user.fullName, email: user.email }
+      user: { fullName: user.fullName, email: user.email, picture: user.picture }
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -57,16 +57,26 @@ const loginUser = async (req,res) => {
 const getUser = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
-    
+
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
     const decoded = jwt.verify(token, process.env.SECRET_KEY);
+    const dbUser = await User.findById(decoded.userId).select('-password');
+    if (!dbUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
     res.status(200).json({
       message: 'User data retrieved successfully',
-      user: decoded
+      user: {
+        userId: dbUser._id,
+        email: dbUser.email,
+        fullName: dbUser.fullName,
+        picture: dbUser.picture
+      }
     });
-    
+
   } catch (err) {
     if (err.name === 'JsonWebTokenError') {
       return res.status(401).json({ message: 'Invalid token' });
@@ -81,7 +91,63 @@ const getUser = async (req, res) => {
 function generateRandomSixDigitNumber() {
   return Math.floor(100000 + Math.random() * 900000);
 }
+const updateProfile = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
 
+    if (!token) {
+      return res.status(401).json({ message: "No token provided" });
+    }
+
+    const decoded = jwt.verify(token, process.env.SECRET_KEY);
+
+    const user = await User.findById(decoded.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const { fullName, email, picture } = req.body;
+
+    // 🔒 Check email uniqueness
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+      user.email = email;
+    }
+
+    if (fullName) user.fullName = fullName;
+
+    // picture can be URL OR multer file
+    if (req.file) {
+      user.picture = req.file.path;
+    } else if (picture !== undefined) {
+      user.picture = picture; // allow null to remove photo
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Profile updated successfully",
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        picture: user.picture,
+      },
+    });
+  } catch (err) {
+    if (err.name === "JsonWebTokenError") {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+    if (err.name === "TokenExpiredError") {
+      return res.status(401).json({ message: "Token expired" });
+    }
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
 const getOTP = async (req, res) => {
   const { email } = req.body;
 
@@ -155,12 +221,12 @@ const verifyOTP = async (req, res) => {
     });
   }
 };
-const resetPassword = async(req, res) => {
+const resetPassword = async (req, res) => {
   const { email, password } = req.body;
-  
+
   try {
     const userExists = await User.exists({ email });
-    
+
     if (!userExists) {
       return res.status(404).json({
         success: false,
@@ -189,4 +255,4 @@ const resetPassword = async(req, res) => {
 }
 
 
-module.exports = {registerUser,loginUser,getUser,getOTP,verifyOTP,resetPassword}
+module.exports = { registerUser, loginUser, getUser, getOTP, verifyOTP, resetPassword, updateProfile }

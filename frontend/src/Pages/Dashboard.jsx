@@ -130,6 +130,12 @@ const Dashboard = () => {
     }
   };
 
+  const getInitials = (name) => {
+    if (!name) return "U";
+    const words = name.split(" ");
+    return words.map((w) => w[0]).join("").toUpperCase();
+  };
+
   if (loading) return <div className="text-center mt-10 text-gray-600">Loading your data...</div>;
 
   if (error) return <div className="text-red-500 text-center mt-10">Error: {error}</div>;
@@ -137,16 +143,37 @@ const Dashboard = () => {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <ToastContainer />
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold text-gray-800">
           Welcome back, {user?.fullName || 'User'}!
         </h1>
-        <button
-          onClick={() => navigate('/create-resume')}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow transition-colors"
-        >
-          + Create New Resume
-        </button>
+        <div className="flex gap-4 items-center">
+          <button
+            onClick={() => navigate('/create-resume')}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow transition-colors h-10"
+          >
+            + Create New Resume
+          </button>
+          
+          {/* Profile Avatar Button */}
+          <button
+            onClick={() => navigate('/profile')}
+            className="w-10 h-10 rounded-full border-2 border-indigo-200 hover:border-indigo-500 transition-colors flex items-center justify-center overflow-hidden focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 bg-indigo-50 shadow-sm"
+            title="My Profile"
+          >
+            {user?.picture ? (
+              <img
+                src={user.picture}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-indigo-600 font-bold text-sm">
+                {getInitials(user?.fullName)}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 <section>
         <h2 className="text-2xl font-semibold mb-6">Your Resumes ({resumes.length})</h2>

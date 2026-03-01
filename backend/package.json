@@ -17,6 +17,7 @@
     "body-parser": "^2.2.0",
     "child_process": "^1.0.2",
     "child-process": "^1.0.2",
+    "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
     "dotenv": "^17.0.1",
     "express": "^5.1.0",
@@ -24,6 +25,8 @@
     "handlebars": "^4.7.8",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.2",
+    "multer": "^2.1.0",
+    "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^7.0.5",
     "path": "^0.12.7",
     "redis": "^5.8.2"
