@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-export default function Profile() {
+export default function Profile({ onClose, onUpdateUser }) {
   const [user, setUser] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: "", email: "" });
@@ -87,6 +87,7 @@ export default function Profile() {
         setUser(updatedUser);
         localStorage.setItem("user", JSON.stringify(updatedUser));
         setIsEditing(false);
+        if (onUpdateUser) onUpdateUser(updatedUser);
       }
     } catch (err) {
       setError(err.response?.data?.message || "An error occurred. Please try again.");
@@ -112,8 +113,18 @@ export default function Profile() {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-[60vh] p-4">
-      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-md">
+    <div className="bg-white shadow-2xl rounded-2xl p-6 md:p-8 w-full relative max-h-[90vh] overflow-y-auto thin-scrollbar">
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-200 rounded-full p-2 transition-colors z-10 focus:outline-none"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      )}
+      <div className="w-full">
         {isEditing ? (
           <form onSubmit={handleUpdate} className="space-y-4">
             <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Edit Profile</h2>

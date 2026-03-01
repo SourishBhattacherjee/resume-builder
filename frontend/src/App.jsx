@@ -27,7 +27,6 @@ function App() {
       <Route path='/dashboard' element = {<Dashboard/>}></Route>
       <Route path='/form/:id' element = {<Form/>}></Route>
       <Route path='/create-resume' element = {<CreateResume/>}></Route>
-      <Route path='/profile' element = {<Profile/>}></Route>
     </Routes>
 
     </>

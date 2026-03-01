@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Profile from '../Component/Profile';
 
 const Dashboard = () => {
   const [user, setUser] = useState(null);
@@ -10,6 +11,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -157,7 +159,7 @@ const Dashboard = () => {
           
           {/* Profile Avatar Button */}
           <button
-            onClick={() => navigate('/profile')}
+            onClick={() => setIsProfileOpen(true)}
             className="w-10 h-10 rounded-full border-2 border-indigo-200 hover:border-indigo-500 transition-colors flex items-center justify-center overflow-hidden focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 bg-indigo-50 shadow-sm"
             title="My Profile"
           >
@@ -275,8 +277,23 @@ const Dashboard = () => {
           </div>
         )}
       </section>
+
+      {/* Profile Modal Overlay */}
+      {isProfileOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 transition-opacity"
+          onClick={() => setIsProfileOpen(false)}
+        >
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md relative z-50">
+            <Profile 
+              onClose={() => setIsProfileOpen(false)} 
+              onUpdateUser={(updatedUser) => setUser({...user, ...updatedUser})} 
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default Dashboard; 
+export default Dashboard;
