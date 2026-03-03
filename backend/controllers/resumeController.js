@@ -50,11 +50,13 @@ const createResume = async (req, res) => {
   }
 };
 const updateResume = async (req, res) => {
+  let texPath, pdfPath, baseName;
+
   try {
     connectDB();
     const { id } = req.params;
 
-    // 1️⃣ Update resume data
+    // 1️⃣ Update DB
     const updatedResume = await Resume.findByIdAndUpdate(
       id,
       req.body,
@@ -65,34 +67,26 @@ const updateResume = async (req, res) => {
       return res.status(404).json({ error: "Resume not found" });
     }
 
-    // 2️⃣ Generate LaTeX content
     const latex = generateResumeLatex(updatedResume);
 
-    // Ensure temp directory exists
+    // 2️⃣ Ensure temp dir exists
     if (!fs.existsSync(TEMP_DIR)) {
       fs.mkdirSync(TEMP_DIR, { recursive: true });
     }
 
-    // 🔥 Use fixed filename (prevents bucket duplication)
-    const baseName = `resume_${id}`;
-    const texPath = path.join(TEMP_DIR, `${baseName}.tex`);
-    const pdfPath = path.join(TEMP_DIR, `${baseName}.pdf`);
+    baseName = `resume_${id}`;
+    texPath = path.join(TEMP_DIR, `${baseName}.tex`);
+    pdfPath = path.join(TEMP_DIR, `${baseName}.pdf`);
 
-    // 3️⃣ Write TEX file
+    // 3️⃣ Write TEX
     fs.writeFileSync(texPath, latex);
 
-    // 4️⃣ Compile LaTeX safely
-    try {
-      execSync(
-        `pdflatex -interaction=nonstopmode -output-directory="${TEMP_DIR}" "${texPath}"`,
-        { stdio: "ignore" }
-      );
-    } catch (compileErr) {
-      console.error("LaTeX compilation failed:", compileErr);
-      return res.status(500).json({ error: "PDF compilation failed" });
-    }
+    // 4️⃣ Compile
+    execSync(
+      `pdflatex -interaction=nonstopmode -output-directory="${TEMP_DIR}" "${texPath}"`,
+      { stdio: "ignore" }
+    );
 
-    // 5️⃣ Ensure PDF was generated
     if (!fs.existsSync(pdfPath)) {
       return res.status(500).json({ error: "PDF not generated" });
     }
@@ -101,7 +95,7 @@ const updateResume = async (req, res) => {
     const pdfKey = `resumes/${id}/${baseName}.pdf`;
     const texKey = `resumes/${id}/${baseName}.tex`;
 
-    // 6️⃣ Upload PDF (overwrite existing file)
+    // 5️⃣ Upload PDF
     const pdfBuffer = fs.readFileSync(pdfPath);
     const { error: pdfUploadError } = await supabase.storage
       .from(bucket)
@@ -112,7 +106,7 @@ const updateResume = async (req, res) => {
 
     if (pdfUploadError) throw pdfUploadError;
 
-    // 7️⃣ Upload TEX (optional, also overwrite)
+    // 6️⃣ Upload TEX (optional)
     const texBuffer = fs.readFileSync(texPath);
     const { error: texUploadError } = await supabase.storage
       .from(bucket)
@@ -123,34 +117,49 @@ const updateResume = async (req, res) => {
 
     if (texUploadError) throw texUploadError;
 
-    // 8️⃣ Generate signed URL (since bucket is private)
-    const { data, error: signError } = await supabase.storage
-      .from(bucket)
-      .createSignedUrl(pdfKey, 3600); // 1 hour expiry
+    // 7️⃣ Create Signed URL
+    const { data: signedData, error: signError } =
+      await supabase.storage
+        .from(bucket)
+        .createSignedUrl(pdfKey, 3600);
 
     if (signError) throw signError;
 
-    const signedUrl = data.signedUrl;
-
-    // 9️⃣ Cleanup local files safely
-    if (fs.existsSync(texPath)) fs.unlinkSync(texPath);
-    if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
-
-    // 🔟 Store only storage path (not signed URL) in DB
+    // 8️⃣ Store storage path in DB
     await Resume.findByIdAndUpdate(id, {
       pdfPath: pdfKey,
       latexPath: texKey,
     });
 
-    // 1️⃣1️⃣ Return signed URL to frontend
+    // 9️⃣ Return URL
     res.json({
       success: true,
-      pdfUrl: signedUrl,
+      pdfUrl: signedData.signedUrl,
     });
 
   } catch (err) {
     console.error("Update resume failed:", err);
     res.status(500).json({ error: err.message });
+
+  } finally {
+    // 🔥 Guaranteed cleanup
+    if (baseName) {
+      const extensions = [
+        "tex",
+        "pdf",
+        "aux",
+        "log",
+        "out",
+        "synctex.gz",
+      ];
+
+      extensions.forEach(ext => {
+        const filePath = path.join(TEMP_DIR, `${baseName}.${ext}`);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      });
+    }
   }
 };
 const deleteResume = async (req, res) => {
