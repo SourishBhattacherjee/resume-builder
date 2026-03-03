@@ -14,38 +14,38 @@ const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY
 const createResume = async (req, res) => {
   try {
     const userId = req.params.id;
-    const { name,template } = req.body;
+    const { name, template } = req.body;
 
     if (!name || !template) {
       return res.status(400).json({
         success: false,
-        message: 'Resume name and template is required'
+        message: "Resume name and template is required",
       });
     }
 
     const newResume = new Resume({
       user: userId,
-      name: name,
-      template: template,
-      contact: {},
+      name,
+      template,
+      personalDetails: [{}], // safe default
       education: [],
       skills: [],
       experience: [],
-      projects: []
+      projects: [],
     });
 
     const savedResume = await newResume.save();
 
     res.status(201).json({
       success: true,
-      message: 'Resume created successfully',
-      data: savedResume
+      _id: savedResume._id,
     });
+
   } catch (error) {
-    res.status(400).json({
+    res.status(500).json({
       success: false,
-      message: 'Error creating resume',
-      error: error.message
+      message: "Error creating resume",
+      error: error.message,
     });
   }
 };
@@ -53,10 +53,19 @@ const updateResume = async (req, res) => {
   try {
     connectDB();
     const { id } = req.params;
-    const updatedResume = await Resume.findByIdAndUpdate(id, req.body, { new: true });
-    if (!updatedResume) return res.status(404).json({ error: 'Resume not found' });
 
-    // Generate LaTeX content
+    // 1️⃣ Update resume data
+    const updatedResume = await Resume.findByIdAndUpdate(
+      id,
+      req.body,
+      { new: true }
+    );
+
+    if (!updatedResume) {
+      return res.status(404).json({ error: "Resume not found" });
+    }
+
+    // 2️⃣ Generate LaTeX content
     const latex = generateResumeLatex(updatedResume);
 
     // Ensure temp directory exists
@@ -64,93 +73,83 @@ const updateResume = async (req, res) => {
       fs.mkdirSync(TEMP_DIR, { recursive: true });
     }
 
-    // Save LaTeX file locally for compilation
-    const texPath = path.join(TEMP_DIR, `resume_${id}.tex`);
+    // 🔥 Use fixed filename (prevents bucket duplication)
+    const baseName = `resume_${id}`;
+    const texPath = path.join(TEMP_DIR, `${baseName}.tex`);
+    const pdfPath = path.join(TEMP_DIR, `${baseName}.pdf`);
+
+    // 3️⃣ Write TEX file
     fs.writeFileSync(texPath, latex);
 
-    // Compile to PDF
-    const outputDir = TEMP_DIR;
-    const baseName = `resume_${id}`;
-    const pdfPath = path.join(outputDir, `${baseName}.pdf`);
-
+    // 4️⃣ Compile LaTeX safely
     try {
-      // 1. Compile LaTeX to PDF
-      execSync(`pdflatex -interaction=nonstopmode -output-directory=${outputDir} ${texPath}`, {
-        stdio: 'ignore',
-      });
-
-      // 2. Convert PDF to PNG using Ghostscript
-      const pngPath = path.join(outputDir, `${baseName}.png`);
-      execSync(`gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r150 -sOutputFile=${pngPath} ${pdfPath}`);
-
-      // 3. Upload files to Supabase with upsert to overwrite existing files
-      const filesToUpload = [
-        { path: texPath, key: `resumes/${id}/${baseName}.tex`, contentType: 'text/x-tex' },
-        { path: pdfPath, key: `resumes/${id}/${baseName}.pdf`, contentType: 'application/pdf' },
-        { path: pngPath, key: `resumes/${id}/${baseName}.png`, contentType: 'image/png' },
-      ];
-
-      for (const file of filesToUpload) {
-        const fileContent = fs.readFileSync(file.path);
-        const { error } = await supabase.storage
-          .from(process.env.SUPABASE_BUCKET)
-          .upload(file.key, fileContent, { 
-            contentType: file.contentType,
-            upsert: true // Overwrite if file exists
-          });
-        if (error) {
-          console.error(`Error uploading ${file.key}:`, error);
-          throw error;
-        }
-      }
-
-      // 4. Read PNG for base64
-      const imageBuffer = fs.readFileSync(pngPath);
-      const base64Image = imageBuffer.toString('base64');
-
-      // 5. Cleanup local files (including auxiliary files)
-      const auxFiles = [
-        '.aux', '.log', '.out', '.toc', '.lof', '.lot', '.bbl', '.blg', '.synctex.gz',
-        '.tex', '.pdf', '.png',
-      ];
-      auxFiles.forEach(ext => {
-        const filePath = path.join(outputDir, `${baseName}${ext}`);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      });
-
-      // 6. Update resume in database
-      const resumeWithPreview = await Resume.findByIdAndUpdate(
-        id,
-        {
-          ...req.body,
-          previewImage: `data:image/png;base64,${base64Image}`,
-          pdfPath: `resumes/${id}/${baseName}.pdf`,
-          latexPath: `resumes/${id}/${baseName}.tex`,
-        },
-        { new: true },
+      execSync(
+        `pdflatex -interaction=nonstopmode -output-directory="${TEMP_DIR}" "${texPath}"`,
+        { stdio: "ignore" }
       );
-
-      res.json({
-        success: true,
-        resume: resumeWithPreview,
-        latexFile: `${baseName}.tex`,
-        pdfFile: `${baseName}.pdf`,
-        previewImage: `data:image/png;base64,${base64Image}`,
-      });
-
-    } catch (compileError) {
-      console.error('Processing failed:', compileError);
-      return res.status(500).json({
-        error: 'PDF generation failed',
-        details: compileError.message,
-        latexSaved: `${baseName}.tex`,
-      });
+    } catch (compileErr) {
+      console.error("LaTeX compilation failed:", compileErr);
+      return res.status(500).json({ error: "PDF compilation failed" });
     }
 
+    // 5️⃣ Ensure PDF was generated
+    if (!fs.existsSync(pdfPath)) {
+      return res.status(500).json({ error: "PDF not generated" });
+    }
+
+    const bucket = process.env.SUPABASE_BUCKET;
+    const pdfKey = `resumes/${id}/${baseName}.pdf`;
+    const texKey = `resumes/${id}/${baseName}.tex`;
+
+    // 6️⃣ Upload PDF (overwrite existing file)
+    const pdfBuffer = fs.readFileSync(pdfPath);
+    const { error: pdfUploadError } = await supabase.storage
+      .from(bucket)
+      .upload(pdfKey, pdfBuffer, {
+        contentType: "application/pdf",
+        upsert: true,
+      });
+
+    if (pdfUploadError) throw pdfUploadError;
+
+    // 7️⃣ Upload TEX (optional, also overwrite)
+    const texBuffer = fs.readFileSync(texPath);
+    const { error: texUploadError } = await supabase.storage
+      .from(bucket)
+      .upload(texKey, texBuffer, {
+        contentType: "text/x-tex",
+        upsert: true,
+      });
+
+    if (texUploadError) throw texUploadError;
+
+    // 8️⃣ Generate signed URL (since bucket is private)
+    const { data, error: signError } = await supabase.storage
+      .from(bucket)
+      .createSignedUrl(pdfKey, 3600); // 1 hour expiry
+
+    if (signError) throw signError;
+
+    const signedUrl = data.signedUrl;
+
+    // 9️⃣ Cleanup local files safely
+    if (fs.existsSync(texPath)) fs.unlinkSync(texPath);
+    if (fs.existsSync(pdfPath)) fs.unlinkSync(pdfPath);
+
+    // 🔟 Store only storage path (not signed URL) in DB
+    await Resume.findByIdAndUpdate(id, {
+      pdfPath: pdfKey,
+      latexPath: texKey,
+    });
+
+    // 1️⃣1️⃣ Return signed URL to frontend
+    res.json({
+      success: true,
+      pdfUrl: signedUrl,
+    });
+
   } catch (err) {
-    console.error(err);
+    console.error("Update resume failed:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -192,24 +191,40 @@ const deleteResume = async (req, res) => {
 const getResume = async (req, res) => {
   try {
     connectDB();
-    const userId = req.params.id;
-    const resumes = await Resume.find({ user: userId })
-      .select('-__v')
-      .sort({ createdAt: -1 });
 
-    if (!resumes || resumes.length === 0) {
+    const userId = req.params.id;
+
+    // 🔥 Get page from query (default = 1)
+    const page = parseInt(req.query.page) || 1;
+    const limit = 6;
+    const skip = (page - 1) * limit;
+
+    // 🔥 Get total count first
+    const totalResumes = await Resume.countDocuments({ user: userId });
+
+    if (totalResumes === 0) {
       return res.status(404).json({
         success: false,
         message: 'No resumes found for this user'
       });
     }
 
+    // 🔥 Fetch paginated resumes
+    const resumes = await Resume.find({ user: userId })
+      .select('-__v')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
     res.status(200).json({
       success: true,
+      currentPage: page,
+      totalPages: Math.ceil(totalResumes / limit),
+      totalResumes,
       count: resumes.length,
       data: resumes
     });
-    
+
   } catch (err) {
     res.status(500).json({
       success: false,
@@ -218,7 +233,6 @@ const getResume = async (req, res) => {
     });
   }
 };
-
 const downloadResume = async (req, res) => {
   const { id } = req.params;
 

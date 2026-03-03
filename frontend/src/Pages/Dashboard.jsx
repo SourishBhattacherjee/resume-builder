@@ -13,6 +13,8 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const navigate = useNavigate();
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,11 +34,13 @@ const Dashboard = () => {
 
         try {
           const resumesRes = await axios.get(
-            `/get/${userRes.data.user.userId}`,
+            `/get/${userRes.data.user.userId}?page=${page}`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
           setResumes(resumesRes.data.data || []);
+          setTotalPages(resumesRes.data.totalPages || 1);
+
         } catch (resumesError) {
           if (resumesError.response?.status === 404) {
             setResumes([]);
@@ -54,7 +58,7 @@ const Dashboard = () => {
     };
 
     fetchData();
-  }, [navigate]);
+  }, [navigate,page]);
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -276,6 +280,30 @@ const Dashboard = () => {
             ))}
           </div>
         )}
+
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center mt-8 gap-4">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage((prev) => prev - 1)}
+              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+            >
+              Previous
+            </button>
+
+            <span className="text-gray-700 font-medium">
+              Page {page} of {totalPages}
+            </span>
+
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage((prev) => prev + 1)}
+              className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Profile Modal Overlay */}
@@ -293,6 +321,7 @@ const Dashboard = () => {
         </div>
       )}
     </div>
+    
   );
 };
 

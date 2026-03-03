@@ -1,72 +1,40 @@
 const mongoose = require('mongoose');
 
+// ---------------- Education ----------------
 const educationSchema = new mongoose.Schema({
-  institution: {
-    type: String,
-    required: true
-  },
-  degree: {
-    type: String,
-    required: true
-  },
-  startDate: {
-    type: Date,
-    required: true
-  },
-  endDate: Date,
-  relatedCoursework: {
-    type: String,
-    required: true
-  }
-});
+  institution: { type: String, default: "" },
+  degree: { type: String, default: "" },
+  startDate: { type: Date },
+  endDate: { type: Date },
+  relatedCoursework: { type: String, default: "" }
+}, { _id: false });
 
+// ---------------- Experience ----------------
 const experienceSchema = new mongoose.Schema({
-  companyName: {
-    type: String,
-    required: true
-  },
-  location: String,
-  startDate: {
-    type: Date,
-    required: true
-  },
-  endDate: Date,
-  currentlyWorking: {
-    type: Boolean,
-    default: false
-  },
-  responsibilities: [String]
-});
+  companyName: { type: String, default: "" },
+  location: { type: String, default: "" },
+  startDate: { type: Date },
+  endDate: { type: Date },
+  currentlyWorking: { type: Boolean, default: false },
+  responsibilities: [{ type: String }]
+}, { _id: false });
 
+// ---------------- Projects ----------------
 const projectSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
-  },
-  link: String,
-  description: [String]
-});
+  name: { type: String, default: "" },
+  link: { type: String, default: "" },
+  description: [{ type: String }]
+}, { _id: false });
 
-
+// ---------------- Personal Details ----------------
 const personalSchema = new mongoose.Schema({
-  fullName:{
-    type:String,
-    required:true
-  },
-  email:{
-    type:String,
-    required:true
-  },
-  linkedin:{
-    type:String,
-    required:true
-  },
-  github:{
-    type:String,
-    required:true
-  }
-})
+  fullName: { type: String, default: "" },
+  email: { type: String, default: "" },
+  linkedin: { type: String, default: "" },
+  github: { type: String, default: "" }
+}, { _id: false });
 
+// ---------------- Resume ----------------
 const resumeSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -77,28 +45,62 @@ const resumeSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  template:{
+  template: {
     type: String,
-    enum:['template1', 'template2', 'template3','template4'],
+    enum: ['template1', 'template2', 'template3', 'template4'],
     default: 'template1'
   },
-  personalDetails: [personalSchema],
-  summary: String,
-  education: [educationSchema],
-  skills: [String],
-  experience: [experienceSchema],
-  projects: [projectSchema],
-  certifications: [{
-    name: String,
-    link:String
-  }],
-  languages: [String],
+
+  personalDetails: {
+    type: [personalSchema],
+    default: [{}]  // ensures safe access [0]
+  },
+
+  summary: { type: String, default: "" },
+
+  education: {
+    type: [educationSchema],
+    default: []
+  },
+
+  skills: {
+    type: [String],
+    default: []
+  },
+
+  experience: {
+    type: [experienceSchema],
+    default: []
+  },
+
+  projects: {
+    type: [projectSchema],
+    default: []
+  },
+
+  certifications: {
+    type: [{
+      name: { type: String, default: "" },
+      link: { type: String, default: "" }
+    }],
+    default: []
+  },
+
+  languages: {
+    type: [String],
+    default: []
+  },
+
+  pdfPath: { type: String },
+  latexPath: { type: String },
+
   lastUpdated: {
     type: Date,
     default: Date.now
-  },
-  previewImage: String
-});
+  }
+
+}, { timestamps: true });
 
 const Resume = mongoose.model('Resume', resumeSchema);
+
 module.exports = Resume;

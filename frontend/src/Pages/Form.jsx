@@ -62,7 +62,7 @@ const Form = () => {
           });
           
           if (response.data.previewImage) {
-            setPreview(response.data.previewImage);
+            setPreview(response.data.pdfUrl);
           }
         }
       } catch (err) {
@@ -80,9 +80,25 @@ const Form = () => {
     setStep((prev) => prev + 1);
   }, 3000); // 3-second buffer
 
-  const nextStep = () => {
-    debouncedNextStep();
-  };
+  const nextStep = async () => {
+  try {
+    setIsGeneratingPreview(true);
+
+    const response = await axios.post(
+      `/update/${actualResumeId}`,
+      formData
+    );
+
+    setPreview(response.data.pdfUrl); // IMPORTANT
+    setStep((prev) => prev + 1);
+
+  } catch (err) {
+    console.error("Error updating preview:", err);
+    setError("Failed to generate preview");
+  } finally {
+    setIsGeneratingPreview(false);
+  }
+};
 
   const prevStep = () => setStep((prev) => prev - 1);
 
@@ -90,7 +106,7 @@ const Form = () => {
     try {
       setIsGeneratingPreview(true);
       const response = await axios.post(`/update/${actualResumeId}`, formData);
-      setPreview(response.data.image);
+      setPreview(response.data.pdfUrl);
     } catch (err) {
       console.error('Preview generation error:', err);
       setError('Failed to generate preview');
@@ -146,7 +162,7 @@ const recommendChanges = async () => {
       let response;
       if (actualResumeId) {
         response = await axios.post(`/update/${actualResumeId}`, formData);
-        setPreview(response.data.previewImage);
+        setPreview(response.data.pdfUrl);
       } else {
         response = await axios.post('/resume', formData);
         navigate(`/form/${response.data._id}`);
