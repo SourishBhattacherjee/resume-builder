@@ -207,83 +207,96 @@ const recommendChanges = async () => {
   }
 
   return (
-    <>
-      <div className="flex flex-col lg:flex-row gap-6 max-w-6xl mx-auto p-6">
-      {/* Form Section */}
-      <div className="lg:w-1/2 bg-white shadow-md rounded-lg p-6">
-        <div className="text-xl font-bold mb-6 text-center">Step {step + 1} of 6</div>
-        {renderStep()}
-      </div>
-      
-      {/* Preview & AI Section */}
-      <div className="lg:w-1/2 space-y-4">
-        <div className="flex items-center justify-between bg-white shadow rounded-lg p-4">
-          <div>
-            <div className="text-sm text-gray-500">Live Preview</div>
-            <div className="text-lg font-semibold">Resume Preview</div>
+    <div className="min-h-screen bg-slate-100 font-sans relative pb-10 lg:pb-0">
+      <div className="flex flex-col lg:flex-row gap-6 max-w-[1400px] mx-auto p-4 lg:p-6 lg:h-screen">
+        
+        {/* Form Section */}
+        <div className="lg:w-1/2 flex flex-col glass-card bg-white/90 border border-slate-200/60 shadow-xl rounded-2xl overflow-hidden h-[75vh] lg:h-full shrink-0 lg:shrink">
+          <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
+            <div className="font-bold text-slate-800 flex items-center gap-2">
+               <span className="bg-indigo-100 text-indigo-700 w-8 h-8 rounded-full flex items-center justify-center text-sm font-black">{step + 1}</span>
+               <span className="inline text-slate-500 font-medium">/ 6 Steps</span>
+            </div>
+            <div className="w-full max-w-[150px] sm:max-w-xs bg-slate-200 h-2 rounded-full overflow-hidden ml-4">
+               <div className="bg-indigo-600 h-full transition-all duration-500 ease-out" style={{width: `${((step + 1) / 6) * 100}%`}}></div>
+            </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={generatePreview}
-              disabled={isGeneratingPreview}
-              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {isGeneratingPreview ? 'Generating...' : 'Generate Preview'}
-            </button>
-
-            <button
-              onClick={recommendChanges}
-              disabled={aiLoading || isGeneratingPreview}
-              className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 disabled:opacity-50"
-              title="Get AI recommendations for improving this resume"
-            >
-              {aiLoading ? 'Analyzing...' : 'Recommend changes'}
-            </button>
+          
+          <div className="p-4 sm:p-6 overflow-y-auto flex-grow custom-scroll bg-white/50">
+            {renderStep()}
           </div>
         </div>
+        
+        {/* Preview & AI Section */}
+        <div className="lg:w-1/2 flex flex-col space-y-4 h-[80vh] lg:h-full shrink-0 lg:shrink mt-8 lg:mt-0">
+          <div className="glass-panel flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white/90 border border-slate-200/60 shadow-lg rounded-2xl p-4 shrink-0 transition-all">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-0.5">Live Preview</div>
+              <div className="text-lg font-bold text-slate-800">Your Resume</div>
+            </div>
 
-        <ResumePreview preview={preview} />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <button
+                onClick={generatePreview}
+                disabled={isGeneratingPreview}
+                className="bg-slate-800 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-black disabled:opacity-50 transition-all flex items-center gap-2"
+              >
+                {isGeneratingPreview ? (
+                  <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                )}
+                <span className="hidden sm:inline">Refresh Preview</span>
+              </button>
 
+              <button
+                onClick={recommendChanges}
+                disabled={aiLoading || isGeneratingPreview}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md shadow-indigo-600/20 hover:bg-indigo-700 hover:shadow-indigo-600/40 disabled:opacity-50 transition-all flex items-center gap-2"
+                title="Get AI recommendations for improving this resume"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
+                <span className="hidden sm:inline">{aiLoading ? 'Analyzing...' : 'AI Enhance'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-grow glass-card bg-white/80 border border-slate-200/60 shadow-xl rounded-2xl overflow-hidden relative">
+             <ResumePreview preview={preview} />
+          </div>
+
+        </div>
       </div>
-    </div>
 
     {/* AI Suggestions Side Panel */}
     <div
-      className={`fixed top-0 right-0 h-full w-80 sm:w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out ${
+      className={`fixed top-0 right-0 h-full w-[calc(100%-3rem)] sm:w-96 bg-white/95 backdrop-blur-2xl shadow-[-20px_0_40px_rgba(0,0,0,0.1)] z-50 transform transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] border-l border-slate-200/60 ${
         isAiPanelOpen ? 'translate-x-0' : 'translate-x-full'
       }`}
     >
       {/* Toggle Button */}
       <button
         onClick={() => setIsAiPanelOpen(!isAiPanelOpen)}
-        className="absolute top-1/2 -left-10 w-10 h-16 bg-white border border-r-0 border-gray-200 rounded-l-lg shadow-md flex items-center justify-center -translate-y-1/2 hover:bg-gray-50 transition-colors z-50 text-gray-600 focus:outline-none"
+        className="absolute top-1/2 -left-12 w-12 h-20 bg-white/95 backdrop-blur border border-r-0 border-slate-200/60 rounded-l-2xl shadow-[-10px_0_20px_rgba(0,0,0,0.05)] flex items-center justify-center -translate-y-1/2 hover:bg-slate-50 transition-colors z-50 text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         title="Toggle AI Suggestions"
       >
         {isAiPanelOpen ? (
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-          </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
         ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6"></polyline>
-          </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
         )}
       </button>
 
-      <div className="p-5 h-full flex flex-col">
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200">
-          <div className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
-              <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"></path>
-              <path d="M7.13 14h.01"></path>
-              <path d="M16.87 14h.01"></path>
-              <path d="M9.5 18c1.38.6 3.62.6 5 0"></path>
-            </svg>
+      <div className="p-6 h-full flex flex-col pt-8">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200">
+          <div className="text-xl font-black text-slate-800 flex items-center gap-3">
+             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20 text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+             </div>
             AI Assistant
           </div>
-          <div className="text-xs font-medium px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
-            {aiSuggestions.length ? `${aiSuggestions.length} tips` : 'New'}
+          <div className="text-xs font-bold px-3 py-1 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-full">
+            {aiSuggestions.length ? `${aiSuggestions.length} Tips` : 'Standby'}
           </div>
         </div>
 
@@ -307,13 +320,13 @@ const recommendChanges = async () => {
           {!aiLoading && !aiError && aiSuggestions.length > 0 && (
             <div className="space-y-4">
               {aiSuggestions.map((s, idx) => (
-                <div key={idx} className="bg-green-50 border border-green-100 p-3 rounded-lg flex items-start gap-3 shadow-sm">
-                  <div className="text-green-600 mt-0.5 shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <div key={idx} className="bg-indigo-50/50 border border-indigo-100/50 p-4 rounded-xl flex items-start gap-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="text-indigo-600 mt-0.5 shrink-0 bg-white p-1 rounded-full shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12"></polyline>
                     </svg>
                   </div>
-                  <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  <div className="text-sm text-slate-700 font-medium leading-relaxed whitespace-pre-wrap">
                     {s}
                   </div>
                 </div>
@@ -322,20 +335,21 @@ const recommendChanges = async () => {
           )}
 
           {!aiLoading && !aiError && aiSuggestions.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-40 text-gray-400 space-y-3 px-4 text-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="9" y1="9" x2="15" y2="9"></line>
-                <line x1="9" y1="13" x2="15" y2="13"></line>
-                <line x1="9" y1="17" x2="15" y2="17"></line>
-              </svg>
-              <span className="text-sm">Click "Recommend changes" to get smart suggestions for your resume.</span>
+            <div className="flex flex-col items-center justify-center h-48 text-slate-400 space-y-4 px-4 text-center glass-panel rounded-2xl mx-2 border-dashed">
+               <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-400">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                  </svg>
+               </div>
+              <span className="text-sm font-medium">Click "AI Enhance" to get intelligent suggestions tailored to your resume.</span>
             </div>
           )}
         </div>
       </div>
     </div>
-    </>
+    </div>
   );
 };
 
