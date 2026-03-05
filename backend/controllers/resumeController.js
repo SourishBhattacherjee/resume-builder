@@ -4,7 +4,7 @@ const saveLatexToFile = require('../helper/saveLatexToFile');
 const Resume = require('../models/Resume');
 const fs = require('fs');
 const path = require('path');
-const { execSync,exec } = require('child_process');
+const { execSync, exec } = require('child_process');
 const connectDB = require('../utils/db');
 
 const TEMP_DIR = path.join(__dirname, '..', 'temp_files');
@@ -177,11 +177,11 @@ const deleteResume = async (req, res) => {
     // Delete files from Supabase
     const extensions = ['.tex', '.pdf', '.png'];
     const fileKeys = extensions.map(ext => `resumes/${id}/resume_${id}${ext}`);
-    
+
     const { error } = await supabase.storage
       .from(process.env.SUPABASE_BUCKET)
       .remove(fileKeys);
-    
+
     if (error) {
       console.error('Error deleting files from Supabase:', error);
       throw error;
@@ -284,10 +284,21 @@ const getResumeById = async (req, res) => {
   try {
     connectDB();
     const resumeId = req.params.id;
-    const resume = await Resume.findById(resumeId);
+    const resume = await Resume.findById(resumeId).lean();
 
     if (!resume) {
       return res.status(404).json({ message: 'Resume not found' });
+    }
+
+    if (resume.pdfPath) {
+      const bucket = process.env.SUPABASE_BUCKET;
+      const { data: signedData, error: signError } = await supabase.storage
+        .from(bucket)
+        .createSignedUrl(resume.pdfPath, 3600);
+
+      if (!signError && signedData) {
+        resume.pdfUrl = signedData.signedUrl;
+      }
     }
 
     res.status(200).json(resume);
@@ -299,5 +310,5 @@ const getResumeById = async (req, res) => {
 
 
 module.exports = {
-  createResume,getResume,updateResume,deleteResume,downloadResume,getResumeById
+  createResume, getResume, updateResume, deleteResume, downloadResume, getResumeById
 }

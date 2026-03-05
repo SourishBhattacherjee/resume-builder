@@ -61,7 +61,7 @@ const Form = () => {
             languages: response.data.languages || [],
           });
           
-          if (response.data.previewImage) {
+          if (response.data.pdfUrl) {
             setPreview(response.data.pdfUrl);
           }
         }

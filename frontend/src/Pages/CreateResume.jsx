@@ -132,7 +132,7 @@ const CreateResume = () => {
                       className="flex flex-col items-center justify-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ease-in-out border-slate-200 bg-slate-50 hover:bg-indigo-50 peer-checked:border-indigo-500 peer-checked:bg-indigo-50 peer-checked:ring-1 peer-checked:ring-indigo-500"
                     >
                       <div className="w-full aspect-[8.5/11] bg-white rounded shadow-sm border border-slate-200 mb-2 overflow-hidden relative">
-                         <img src={`/src/assets/${template}.png`} alt={template} className="w-full h-full object-cover object-top opacity-80" />
+                         <img src={new URL(`../assets/${template}.png`, import.meta.url).href} alt={template} className="w-full h-full object-cover object-top opacity-80" />
                       </div>
                       <span className="text-sm font-bold text-slate-700 capitalize">
                         {template.replace('template', 'Template ')}

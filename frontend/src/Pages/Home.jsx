@@ -75,7 +75,7 @@ const Home = () => {
                 <div className="relative overflow-hidden aspect-[8.5/11] bg-slate-100 p-4">
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"></div>
                   <img 
-                    src={'/src/assets/template' + template + '.png'} 
+                    src={new URL(`../assets/template${template}.png`, import.meta.url).href} 
                     alt={`Template ${template}`}
                     className="w-full h-full object-cover object-top rounded shadow-sm group-hover:scale-105 transition-transform duration-700 ease-out"
                   />
