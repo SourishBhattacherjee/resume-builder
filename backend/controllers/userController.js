@@ -56,13 +56,8 @@ const loginUser = async (req, res) => {
 
 const getUser = async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-      return res.status(401).json({ message: 'No token provided' });
-    }
-    const decoded = jwt.verify(token, process.env.SECRET_KEY);
-    const dbUser = await User.findById(decoded.userId).select('-password');
+    // req.user is populated by authMiddleware
+    const dbUser = await User.findById(req.user.userId).select('-password');
     if (!dbUser) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -93,15 +88,8 @@ function generateRandomSixDigitNumber() {
 }
 const updateProfile = async (req, res) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-
-    if (!token) {
-      return res.status(401).json({ message: "No token provided" });
-    }
-
-    const decoded = jwt.verify(token, process.env.SECRET_KEY);
-
-    const user = await User.findById(decoded.userId);
+    // req.user is populated by authMiddleware
+    const user = await User.findById(req.user.userId);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
