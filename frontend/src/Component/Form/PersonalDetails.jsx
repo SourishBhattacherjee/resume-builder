@@ -41,7 +41,7 @@ const PersonalDetails = ({ formData, setFormData, nextStep, prevStep, handleSubm
           Back
         </button>
         <button 
-          onClick={() => { nextStep(); handleSubmit(); }} 
+          onClick={() => { nextStep(); }} 
           className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-indigo-600/30 transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center gap-2"
         >
           Next Step

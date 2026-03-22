@@ -9,6 +9,7 @@ const connectDB = require('../utils/db');
 
 const TEMP_DIR = path.join(__dirname, '..', 'temp_files');
 
+const { redisClient } = require('../utils/redis');
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
 const createResume = async (req, res) => {
@@ -308,7 +309,85 @@ const getResumeById = async (req, res) => {
   }
 };
 
+const previewResume = async (req, res) => {
+  let texPath, pdfPath, baseName;
+
+  try {
+    const { id } = req.params;
+    const formData = req.body;
+
+    // 1️⃣ Store in Redis
+    await redisClient.setEx(`resume:preview:${id}`, 3600, JSON.stringify(formData));
+
+    const latex = generateResumeLatex(formData);
+
+    // 2️⃣ Ensure temp dir exists
+    if (!fs.existsSync(TEMP_DIR)) {
+      fs.mkdirSync(TEMP_DIR, { recursive: true });
+    }
+
+    baseName = `preview_${id}`;
+    texPath = path.join(TEMP_DIR, `${baseName}.tex`);
+    pdfPath = path.join(TEMP_DIR, `${baseName}.pdf`);
+
+    // 3️⃣ Write TEX
+    fs.writeFileSync(texPath, latex);
+
+    // 4️⃣ Compile
+    execSync(
+      `pdflatex -interaction=nonstopmode -output-directory="${TEMP_DIR}" "${texPath}"`,
+      { stdio: "ignore" }
+    );
+
+    if (!fs.existsSync(pdfPath)) {
+      return res.status(500).json({ error: "PDF not generated" });
+    }
+
+    const bucket = process.env.SUPABASE_BUCKET;
+    const pdfKey = `previews/${id}/${baseName}.pdf`;
+
+    // 5️⃣ Upload PDF
+    const pdfBuffer = fs.readFileSync(pdfPath);
+    const { error: pdfUploadError } = await supabase.storage
+      .from(bucket)
+      .upload(pdfKey, pdfBuffer, {
+        contentType: "application/pdf",
+        upsert: true,
+      });
+
+    if (pdfUploadError) throw pdfUploadError;
+
+    // 6️⃣ Create Signed URL
+    const { data: signedData, error: signError } =
+      await supabase.storage
+        .from(bucket)
+        .createSignedUrl(pdfKey, 3600);
+
+    if (signError) throw signError;
+
+    // 7️⃣ Return URL
+    res.json({
+      success: true,
+      pdfUrl: signedData.signedUrl,
+    });
+
+  } catch (err) {
+    console.error("Preview resume failed:", err);
+    res.status(500).json({ error: err.message });
+
+  } finally {
+    if (baseName) {
+      const extensions = ["tex", "pdf", "aux", "log", "out", "synctex.gz"];
+      extensions.forEach(ext => {
+        const filePath = path.join(TEMP_DIR, `${baseName}.${ext}`);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      });
+    }
+  }
+};
 
 module.exports = {
-  createResume, getResume, updateResume, deleteResume, downloadResume, getResumeById
+  createResume, getResume, updateResume, deleteResume, downloadResume, getResumeById, previewResume
 }

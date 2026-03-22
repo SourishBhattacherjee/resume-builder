@@ -85,7 +85,7 @@ const Form = () => {
     setIsGeneratingPreview(true);
 
     const response = await axios.post(
-      `/update/${actualResumeId}`,
+      `/preview/${actualResumeId}`,
       formData
     );
 
@@ -105,7 +105,7 @@ const Form = () => {
   const generatePreview = async () => {
     try {
       setIsGeneratingPreview(true);
-      const response = await axios.post(`/update/${actualResumeId}`, formData);
+      const response = await axios.post(`/preview/${actualResumeId}`, formData);
       setPreview(response.data.pdfUrl);
     } catch (err) {
       console.error('Preview generation error:', err);

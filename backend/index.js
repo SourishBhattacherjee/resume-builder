@@ -9,7 +9,7 @@ const cors = require('cors')
 const http = require('http');
 const userRoute = require('./routes/userRoute')
 const connectDB = require('./utils/db');
-const redisClient = require('./utils/redis');
+const { redisClient } = require('./utils/redis');
 const Resume = require('./models/Resume');
 require('dotenv').config();
 connectDB();
@@ -27,10 +27,16 @@ app.post('/ai/recommend', async (req, res) => {
   let payloadObj = req.body || {};
   try {
     if (payloadObj.id) {
-      const resumeDoc = await Resume.findById(payloadObj.id).lean();
-      if (!resumeDoc) return res.status(404).json({ error: 'Resume not found' });
-      // Use the resume document as the payload to send to AI helper
-      payloadObj = resumeDoc;
+      // 1. Try Redis first (latest unsaved data)
+      const cachedResume = await redisClient.get(`resume:preview:${payloadObj.id}`);
+      if (cachedResume) {
+        payloadObj = JSON.parse(cachedResume);
+      } else {
+        // 2. Fallback to MongoDB
+        const resumeDoc = await Resume.findById(payloadObj.id).lean();
+        if (!resumeDoc) return res.status(404).json({ error: 'Resume not found' });
+        payloadObj = resumeDoc;
+      }
     }
   } catch (err) {
     return res.status(500).json({ error: 'Failed to load resume', details: err.message });
