@@ -57,15 +57,31 @@ const updateResume = async (req, res) => {
     connectDB();
     const { id } = req.params;
 
-    // 1️⃣ Update DB
-    const updatedResume = await Resume.findByIdAndUpdate(
-      id,
-      req.body,
+    // 1️⃣ Update DB with Optimistic Concurrency Control
+    // We check if the __v in the body matches the __v in the DB
+    const updateData = { ...req.body };
+    const currentVersion = req.body.__v;
+    
+    // Remove __v from updateData to prevent manual tampering, $inc will handle it
+    delete updateData.__v;
+
+    const updatedResume = await Resume.findOneAndUpdate(
+      { _id: id, __v: currentVersion },
+      { ...updateData, $inc: { __v: 1 } },
       { new: true }
     );
 
     if (!updatedResume) {
-      return res.status(404).json({ error: "Resume not found" });
+      // If no document matches, it means either ID is wrong or Version mismatched
+      const exists = await Resume.findById(id);
+      if (!exists) {
+        return res.status(404).json({ error: "Resume not found" });
+      } else {
+        return res.status(409).json({ 
+          error: "Conflict: Resume has been modified by another user. Please refresh and try again.",
+          conflict: true
+        });
+      }
     }
 
     const latex = generateResumeLatex(updatedResume);

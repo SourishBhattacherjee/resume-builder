@@ -169,8 +169,16 @@ const recommendChanges = async () => {
       }
     } catch (err) {
       console.error('Submit error:', err);
-      setError(`Submission failed: ${err.message}`);
-      alert('Failed to save resume. Please try again.');
+      if (err.response?.status === 409) {
+        alert('Conflict: This resume has been modified by someone else. Your changes cannot be saved until you refresh to get the latest version.');
+        // Optionally reload or re-fetch
+        if (window.confirm('Would you like to reload the page to see the latest changes? (Note: Your unsaved changes will be lost)')) {
+          window.location.reload();
+        }
+      } else {
+        setError(`Submission failed: ${err.message}`);
+        alert('Failed to save resume. Please try again.');
+      }
     }
   };
 
