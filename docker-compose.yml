@@ -19,6 +19,8 @@ services:
       - PORT=7000
       - AI_HELPER_URL=http://ai-helper:9000
       - REDIS_HOST=redis
+    env_file:
+      - ./backend/.env
     depends_on:
       - ai-helper
       - redis

@@ -1,6 +1,6 @@
 FROM node:20-bullseye-slim AS build
 
-ARG VITE_BACKEND_URL=http://localhost:5000
+ARG VITE_BACKEND_URL=http://localhost:7000
 ENV VITE_BACKEND_URL=${VITE_BACKEND_URL}
 
 WORKDIR /app

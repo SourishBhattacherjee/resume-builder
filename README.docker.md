@@ -23,6 +23,6 @@ docker-compose down
 
 Notes:
 - Frontend is served by nginx on host port `5173` (mapped to container port 80).
-- Backend listens on host port `5000`.
+- Backend listens on host port `7000`.
 - FastAPI AI helper listens on host port `9000`.
 - The compose mounts `./helper/latex_files` into containers so generated LaTeX persists on the host.
